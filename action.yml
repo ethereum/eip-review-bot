@@ -1,0 +1,16 @@
+name: EIP Manager
+description: Automatically add labels depending on Jekyll front matter attributes
+author: Pandapip1
+
+inputs:
+  token:
+    description: GitHub token with repo permissions
+    required: true
+
+runs:
+  using: node16
+  main: dist/index.js
+
+branding:
+  icon: settings
+  color: gray-dark

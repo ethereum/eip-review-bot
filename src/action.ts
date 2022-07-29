@@ -58,7 +58,7 @@ async function run() {
         owner: pull_request.base.repo.owner.login,
         repo: pull_request.base.repo.name,
         pull_number: pull_request.number,
-    })).map((reviewer: any) => reviewer.login);
+    })).map((reviewer) => reviewer.url.split("/").pop());
 
     for (let review of reviews) {
         if (review.state == 'APPROVED' && review.commit_id == pull_request.head.sha && review.user?.login) {

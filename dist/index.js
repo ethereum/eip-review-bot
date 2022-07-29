@@ -21999,16 +21999,41 @@ async function authors_default(_octokit, _config, files) {
   return ret;
 }
 
-// src/rules/statuschange.ts
+// src/rules/new.ts
 var import_front_matter2 = __toESM(require_front_matter(), 1);
+async function new_default(_octokit, config, files) {
+  let res = await Promise.all(files.map(async (file) => {
+    var _a, _b, _c, _d;
+    if (!file.filename.endsWith(".md"))
+      return [];
+    let frontMatter = (0, import_front_matter2.default)(file.previous_contents);
+    if (["added"].includes(file.status)) {
+      return [{
+        name: "authors",
+        reviewers: config[(((_a = frontMatter.attributes) == null ? void 0 : _a.category) || ((_b = frontMatter.attributes) == null ? void 0 : _b.type) || "all").toLowerCase()],
+        min: Math.ceil(config[(((_c = frontMatter.attributes) == null ? void 0 : _c.category) || ((_d = frontMatter.attributes) == null ? void 0 : _d.type) || "all").toLowerCase()].length / 2),
+        annotation: {
+          file: file.filename
+        }
+      }];
+    }
+    return [];
+  }));
+  let ret = [];
+  res.forEach((val) => ret.push(...val));
+  return ret;
+}
+
+// src/rules/statuschange.ts
+var import_front_matter3 = __toESM(require_front_matter(), 1);
 var statusOrder = ["withdrawn", "stagnant", "draft", "review", "last-call", "final", "living"];
 async function statuschange_default(_octokit, config, files) {
   let res = await Promise.all(files.map(async (file) => {
     var _a, _b, _c, _d;
     if (!file.filename.endsWith(".md"))
       return [];
-    let frontMatter = (0, import_front_matter2.default)(file.previous_contents);
-    let frontMatterNew = (0, import_front_matter2.default)(file.contents);
+    let frontMatter = (0, import_front_matter3.default)(file.previous_contents);
+    let frontMatterNew = (0, import_front_matter3.default)(file.contents);
     if (statusOrder.indexOf((_a = frontMatter.attributes) == null ? void 0 : _a.status) < statusOrder.indexOf((_b = frontMatterNew.attributes) == null ? void 0 : _b.status)) {
       return [{
         name: "statuschange",
@@ -22027,13 +22052,13 @@ async function statuschange_default(_octokit, config, files) {
 }
 
 // src/rules/terminal.ts
-var import_front_matter3 = __toESM(require_front_matter(), 1);
+var import_front_matter4 = __toESM(require_front_matter(), 1);
 async function terminal_default(_octokit, config, files) {
   let res = await Promise.all(files.map(async (file) => {
     var _a;
     if (!file.filename.endsWith(".md"))
       return [];
-    let frontMatter = (0, import_front_matter3.default)(file.previous_contents);
+    let frontMatter = (0, import_front_matter4.default)(file.previous_contents);
     if (["living", "final", "stagnant", "withdrawn"].includes((_a = frontMatter.attributes) == null ? void 0 : _a.status)) {
       return [{
         name: "terminal",
@@ -22071,7 +22096,7 @@ async function unknown_default(_octokit, config, files) {
 }
 
 // src/process.ts
-var rules = [assets_default, authors_default, statuschange_default, terminal_default, unknown_default];
+var rules = [assets_default, authors_default, new_default, statuschange_default, terminal_default, unknown_default];
 async function process_default(octokit2, config, files) {
   let files2 = await Promise.all(files.map(async (file) => {
     const payload = import_github.default.context.payload;

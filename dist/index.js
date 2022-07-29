@@ -22003,15 +22003,15 @@ async function authors_default(_octokit, _config, files) {
 var import_front_matter2 = __toESM(require_front_matter(), 1);
 async function new_default(_octokit, config, files) {
   let res = await Promise.all(files.map(async (file) => {
-    var _a, _b, _c, _d;
+    var _a, _b;
     if (!file.filename.endsWith(".md"))
       return [];
-    let frontMatter = (0, import_front_matter2.default)(file.previous_contents);
+    let frontMatter = (0, import_front_matter2.default)(file.contents);
     if (["added"].includes(file.status)) {
       return [{
-        name: "authors",
+        name: "new",
         reviewers: config[(((_a = frontMatter.attributes) == null ? void 0 : _a.category) || ((_b = frontMatter.attributes) == null ? void 0 : _b.type) || "all").toLowerCase()],
-        min: Math.ceil(config[(((_c = frontMatter.attributes) == null ? void 0 : _c.category) || ((_d = frontMatter.attributes) == null ? void 0 : _d.type) || "all").toLowerCase()].length / 2),
+        min: 1,
         annotation: {
           file: file.filename
         }
@@ -22117,9 +22117,7 @@ async function process_default(octokit2, config, files) {
     }
     return file;
   }));
-  console.log(JSON.stringify(files2, null, 2));
   let res = await Promise.all(rules.map((rule) => rule(octokit2, config, files2)));
-  console.log(JSON.stringify(res, null, 2));
   let ret = [];
   res.forEach((val) => ret.push(...val));
   return ret;
@@ -22155,7 +22153,6 @@ async function run() {
     repo: repository.name,
     pull_number: pull_request.number
   });
-  console.log(JSON.stringify(files, null, 2));
   let result = await process_default(octokit, config, files);
   let requiredReviewers = /* @__PURE__ */ new Set();
   let reviewedBy = /* @__PURE__ */ new Set();
@@ -22164,13 +22161,11 @@ async function run() {
     repo: repository.name,
     pull_number: pull_request.number
   });
-  console.log(JSON.stringify(result, null, 2));
   const requestedReviews = (await octokit.paginate(octokit.rest.pulls.listRequestedReviewers, {
     owner: repository.owner.login,
     repo: repository.name,
     pull_number: pull_request.number
   })).map((reviewer) => {
-    console.log(JSON.stringify(reviewer, null, 2));
     return reviewer.login;
   });
   for (let review of reviews) {
@@ -22187,7 +22182,6 @@ async function run() {
       reviewedBy.add((_b = review.user) == null ? void 0 : _b.login);
     }
   }
-  console.log(JSON.stringify(result, null, 2));
   let wholePassed = true;
   for (let rule of result) {
     let passed = true;
@@ -22195,6 +22189,9 @@ async function run() {
     for (let reviewer of rule.reviewers) {
       if (!reviewedBy.has(reviewer) && !requestedReviews.includes(reviewer)) {
         requiredReviewers.add(reviewer);
+        console.log(`Requesting ${reviewer}`);
+        console.log(`Requested ${requiredReviewers}`);
+        console.log(`Size ${requiredReviewers.size}`);
       }
       if (!reviewedBy.has(reviewer)) {
         wholePassed = false;

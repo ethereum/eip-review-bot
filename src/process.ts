@@ -37,11 +37,9 @@ export default async function(octokit: Octokit, config: Config, files: File[]) {
 
         return file;
     }));
-    console.log(JSON.stringify(files2, null, 2));
 
     // Get results
     let res : Rule[][] = await Promise.all(rules.map(rule => rule(octokit, config, files2)));
-    console.log(JSON.stringify(res, null, 2));
 
     // Merge results
     let ret: Rule[] = [];

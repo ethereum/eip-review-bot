@@ -42,8 +42,6 @@ async function run() {
         pull_number: pull_request.number,
     });
 
-    console.log(JSON.stringify(files, null, 2));
-
     let result: Rule[] = await processFiles(octokit, config, files);
 
     // Set the output
@@ -56,14 +54,11 @@ async function run() {
         pull_number: pull_request.number,
     });
 
-    console.log(JSON.stringify(result, null, 2));
-
     const requestedReviews = (await octokit.paginate(octokit.rest.pulls.listRequestedReviewers, {
         owner: repository.owner.login,
         repo: repository.name,
         pull_number: pull_request.number,
     })).map((reviewer: any) => {
-        console.log(JSON.stringify(reviewer, null, 2));
         return reviewer.login as string;
     });
 
@@ -81,8 +76,6 @@ async function run() {
         }
     }
 
-    console.log(JSON.stringify(result, null, 2));
-
     let wholePassed = true;
     for (let rule of result) {
         let passed = true;
@@ -90,6 +83,9 @@ async function run() {
         for (let reviewer of rule.reviewers) {
             if (!reviewedBy.has(reviewer) && !requestedReviews.includes(reviewer)) {
                 requiredReviewers.add(reviewer);
+                console.log(`Requesting ${reviewer}`);
+                console.log(`Requested ${requiredReviewers}`);
+                console.log(`Size ${requiredReviewers.size}`);
             }
             if (!reviewedBy.has(reviewer)) {
                 wholePassed = false;

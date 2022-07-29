@@ -6,13 +6,13 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
     let res : Rule[][] = await Promise.all(files.map(async file => {
         if (!file.filename.endsWith(".md")) return [];
 
-        let frontMatter = fm<FrontMatter>(file.previous_contents as string);
+        let frontMatter = fm<FrontMatter>(file.contents as string);
 
         if (["added"].includes(file.status)) {
             return [{
-                name: "authors",
+                name: "new",
                 reviewers: config[(frontMatter.attributes?.category || frontMatter.attributes?.type || "all").toLowerCase()],
-                min: Math.ceil(config[(frontMatter.attributes?.category || frontMatter.attributes?.type || "all").toLowerCase()].length / 2),
+                min: 1,
                 annotation: {
                     file: file.filename
                 }

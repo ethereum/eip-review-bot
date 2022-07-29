@@ -37,10 +37,12 @@ async function run() {
 
     // Process files
     const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
-        owner: pull_request.base.repo.owner.login,
-        repo: pull_request.base.repo.name,
+        owner: repository.owner.login,
+        repo: repository.name,
         pull_number: pull_request.number,
     });
+
+    console.log(JSON.stringify(files, null, 2));
 
     let result: Rule[] = await processFiles(octokit, config, files);
 
@@ -49,16 +51,16 @@ async function run() {
     let reviewedBy = new Set<string>();
 
     const reviews = await octokit.paginate(octokit.rest.pulls.listReviews, {
-        owner: pull_request.base.repo.owner.login,
-        repo: pull_request.base.repo.name,
+        owner: repository.owner.login,
+        repo: repository.name,
         pull_number: pull_request.number,
     });
 
     console.log(JSON.stringify(result, null, 2));
 
     const requestedReviews = (await octokit.paginate(octokit.rest.pulls.listRequestedReviewers, {
-        owner: pull_request.base.repo.owner.login,
-        repo: pull_request.base.repo.name,
+        owner: repository.owner.login,
+        repo: repository.name,
         pull_number: pull_request.number,
     })).map((reviewer: any) => {
         console.log(JSON.stringify(reviewer, null, 2));

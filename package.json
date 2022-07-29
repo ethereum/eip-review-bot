@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "ncc build src/action.ts -o dist"
+    "build": "esbuild src/action.ts --bundle --platform=node --target=node16 --outfile=dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -19,8 +19,7 @@
   "homepage": "https://github.com/Pandapip1/eipm#readme",
   "devDependencies": {
     "@actions/core": "^1.9.0",
-    "@actions/github": "^5.0.3",
-    "@vercel/ncc": "^0.34.0"
+    "@actions/github": "^5.0.3"
   },
   "dependencies": {
     "@octokit/plugin-throttling": "^4.1.0",
@@ -29,6 +28,7 @@
     "before-after-hook": "^2.2.2",
     "bottleneck": "^2.19.5",
     "encoding": "^0.1.13",
+    "esbuild": "^0.14.51",
     "front-matter": "^4.0.2",
     "js-yaml": "^4.1.0",
     "once": "^1.4.0",

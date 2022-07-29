@@ -1,6 +1,3 @@
-import { Octokit as OGOctokit } from '@octokit/core/dist-types/';
-import { Api } from '@octokit/plugin-rest-endpoint-methods/dist-types/types';
-import { PaginateInterface } from '@octokit/plugin-paginate-rest';
 import core from "@actions/core";
 
 export declare type File = {
@@ -19,8 +16,8 @@ export declare type File = {
     previous_contents?: string | undefined;
 };
 
-export declare type Octokit = OGOctokit & Api & {
-    paginate: PaginateInterface;
+export declare type Octokit = import("@octokit/core/dist-types").Octokit & import("@octokit/plugin-rest-endpoint-methods/dist-types/types").Api & {
+    paginate: import("@octokit/plugin-paginate-rest").PaginateInterface;
 };
 
 export declare type Config = { [key: string]: string[] };

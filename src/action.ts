@@ -54,13 +54,15 @@ async function run() {
         pull_number: pull_request.number,
     });
 
+    core.debug(JSON.stringify(result, null, 2));
+
     const requestedReviews = (await octokit.paginate(octokit.rest.pulls.listRequestedReviewers, {
         owner: pull_request.base.repo.owner.login,
         repo: pull_request.base.repo.name,
         pull_number: pull_request.number,
     })).map((reviewer: any) => {
         core.debug(JSON.stringify(reviewer, null, 2));
-        return reviewer.login;
+        return reviewer.login as string;
     });
 
     for (let review of reviews) {
@@ -76,6 +78,8 @@ async function run() {
             reviewedBy.add(review.user?.login as string);
         }
     }
+
+    core.debug(JSON.stringify(result, null, 2));
 
     let wholePassed = true;
     for (let rule of result) {
@@ -105,15 +109,15 @@ async function run() {
         });
     }
 
-    let reviewersToDismiss = requestedReviews.filter(reviewer => !requiredReviewers.has(reviewer)).filter(reviewer => !reviewedBy.has(reviewer));
+    /*let reviewersToDismiss = requestedReviews.filter(reviewer => !requiredReviewers.has(reviewer)).filter(reviewer => !reviewedBy.has(reviewer));
     if (reviewersToDismiss.length) {
         octokit.rest.pulls.removeRequestedReviewers({
-            owner: pull_request.base.repo.owner.login,
-            repo: pull_request.base.repo.name,
+            owner: repository.owner.login,
+            repo: repository.name,
             pull_number: pull_request.number,
             reviewers: reviewersToDismiss,
         });
-    }
+    }*/
 
     if (!wholePassed) {
         core.setFailed('Not all reviewers have approved the pull request');

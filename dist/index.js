@@ -22092,7 +22092,9 @@ async function process_default(octokit2, config, files) {
     }
     return file;
   }));
+  console.log(JSON.stringify(files2, null, 2));
   let res = await Promise.all(rules.map((rule) => rule(octokit2, config, files2)));
+  console.log(JSON.stringify(res, null, 2));
   let ret = [];
   res.forEach((val) => ret.push(...val));
   return ret;
@@ -22124,22 +22126,23 @@ async function run() {
   }
   const config = (0, import_yaml.parse)(Buffer.from(response.data.content, "base64").toString("utf8"));
   const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
-    owner: pull_request.base.repo.owner.login,
-    repo: pull_request.base.repo.name,
+    owner: repository.owner.login,
+    repo: repository.name,
     pull_number: pull_request.number
   });
+  console.log(JSON.stringify(files, null, 2));
   let result = await process_default(octokit, config, files);
   let requiredReviewers = /* @__PURE__ */ new Set();
   let reviewedBy = /* @__PURE__ */ new Set();
   const reviews = await octokit.paginate(octokit.rest.pulls.listReviews, {
-    owner: pull_request.base.repo.owner.login,
-    repo: pull_request.base.repo.name,
+    owner: repository.owner.login,
+    repo: repository.name,
     pull_number: pull_request.number
   });
   console.log(JSON.stringify(result, null, 2));
   const requestedReviews = (await octokit.paginate(octokit.rest.pulls.listRequestedReviewers, {
-    owner: pull_request.base.repo.owner.login,
-    repo: pull_request.base.repo.name,
+    owner: repository.owner.login,
+    repo: repository.name,
     pull_number: pull_request.number
   })).map((reviewer) => {
     console.log(JSON.stringify(reviewer, null, 2));

@@ -1,9 +1,15 @@
 import github from '@actions/github';
 import core from '@actions/core';
 import { PullRequestEvent } from '@octokit/webhooks-types';
-import { Octokit, Config, File, Rule, RuleGenerator } from "./types";
+import { Octokit, Config, File, Rule } from "./types";
 
-const rules: RuleGenerator[] = ['assets', 'authors', 'statuschange', 'terminal', 'unknown'].map(item => require(`./rules/${item}`));
+import checkAssets from './rules/assets';
+import checkAuthors from './rules/authors';
+import checkStatus from './rules/statuschange';
+import checkTerminalStatus from './rules/terminal';
+import checkOtherFiles from './rules/unknown';
+
+let rules = [ checkAssets, checkAuthors, checkStatus, checkTerminalStatus, checkOtherFiles ];
 
 export default async function(octokit: Octokit, config: Config, files: File[]) {
     let files2: File[] = await Promise.all(files.map(async file => {

@@ -1,4 +1,4 @@
-import { Octokit, Config, FrontMatter, File, Rule } from "../types";
+import { Octokit, Config, FrontMatter, File, Rule } from "../types.js";
 import fm from "front-matter";
 
 export default async function (_octokit: Octokit, _config: Config, files: File[] ) : Promise<Rule[]> {

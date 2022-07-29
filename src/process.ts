@@ -1,13 +1,13 @@
 import github from '@actions/github';
 import core from '@actions/core';
 import { PullRequestEvent } from '@octokit/webhooks-types';
-import { Octokit, Config, File, Rule } from "./types";
+import { Octokit, Config, File, Rule } from "./types.js";
 
-import checkAssets from './rules/assets';
-import checkAuthors from './rules/authors';
-import checkStatus from './rules/statuschange';
-import checkTerminalStatus from './rules/terminal';
-import checkOtherFiles from './rules/unknown';
+import checkAssets from './rules/assets.js';
+import checkAuthors from './rules/authors.js';
+import checkStatus from './rules/statuschange.js';
+import checkTerminalStatus from './rules/terminal.js';
+import checkOtherFiles from './rules/unknown.js';
 
 let rules = [ checkAssets, checkAuthors, checkStatus, checkTerminalStatus, checkOtherFiles ];
 

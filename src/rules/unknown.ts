@@ -1,4 +1,4 @@
-import { Octokit, Config, File, Rule } from "../types";
+import { Octokit, Config, File, Rule } from "../types.js";
 
 export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results

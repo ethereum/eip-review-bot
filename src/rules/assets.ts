@@ -1,5 +1,5 @@
-import { Octokit, Config, File, Rule } from "../types";
-import processFiles from "../process";
+import { Octokit, Config, File, Rule } from "../types.js";
+import processFiles from "../process.js";
 
 export default async function (octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results

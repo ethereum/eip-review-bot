@@ -1,5 +1,5 @@
 import fm from "front-matter";
-import { Octokit, Config, FrontMatter, File, Rule } from "../types";
+import { Octokit, Config, FrontMatter, File, Rule } from "../types.js";
 
 export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results

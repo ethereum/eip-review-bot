@@ -1,11 +1,11 @@
 import core from '@actions/core';
 import github from '@actions/github';
-import { GitHub, getOctokitOptions } from "@actions/github/lib/utils.js";
+import { GitHub, getOctokitOptions } from "@actions/github/lib/utils";
 import { throttling } from "@octokit/plugin-throttling";
 import { parse } from 'yaml';
 import { PullRequestEvent } from "@octokit/webhooks-types";
-import processFiles from './process';
-import { Rule } from './types';
+import processFiles from './process.js';
+import { Rule } from './types.js';
 
 const unknown = "<unknown>";
 const ThrottledOctokit = GitHub.plugin(throttling);

@@ -1,5 +1,5 @@
 import fm from "front-matter";
-import { Octokit, Config, FrontMatter, File, Rule } from "../types";
+import { Octokit, Config, FrontMatter, File, Rule } from "../types.js";
 
 let statusOrder = ["withdrawn", "stagnant", "draft", "review", "last-call", "final", "living"];
 

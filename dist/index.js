@@ -8311,10 +8311,10 @@ module.exports.implForWrapper = function (wrapper) {
 
 /***/ }),
 
-/***/ 1354:
+/***/ 2607:
 /***/ ((module) => {
 
-module.exports = eval("require")("./process");
+module.exports = eval("require")("@actions/github/lib/utils");
 
 
 /***/ }),
@@ -8339,6 +8339,14 @@ module.exports = eval("require")("bottleneck/light");
 /***/ ((module) => {
 
 module.exports = eval("require")("encoding");
+
+
+/***/ }),
+
+/***/ 9576:
+/***/ ((module) => {
+
+module.exports = eval("require")("front-matter");
 
 
 /***/ }),
@@ -16694,52 +16702,221 @@ exports.visitAsync = visitAsync;
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
-/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
-/* harmony import */ var _actions_github_lib_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3030);
-/* harmony import */ var _octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(9968);
-/* harmony import */ var yaml__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4083);
-/* harmony import */ var _process__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1354);
+
+// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(2186);
+// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
+var github = __nccwpck_require__(5438);
+// EXTERNAL MODULE: ./node_modules/@vercel/ncc/dist/ncc/@@notfound.js?@actions/github/lib/utils
+var utils = __nccwpck_require__(2607);
+// EXTERNAL MODULE: ./node_modules/@octokit/plugin-throttling/dist-node/index.js
+var dist_node = __nccwpck_require__(9968);
+// EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
+var dist = __nccwpck_require__(4083);
+;// CONCATENATED MODULE: ./src/rules/assets.js
+
+/* harmony default export */ async function assets(octokit, config, files) {
+    // Get results
+    let res = await Promise.all(files.map(async (file) => {
+        if (!file.filename.startsWith("assets/") || files.some(f => f.filename == `EIPS/${file.filename.split("/")[2]}.md`))
+            return [];
+        return src_process(octokit, config, [{
+                filename: `EIPS/${file.filename.split("/")[2]}.md`,
+                status: 'modified'
+            }]);
+    }));
+    // Merge results
+    let ret = [];
+    res.forEach(val => ret.push(...val));
+    return ret;
+}
+
+// EXTERNAL MODULE: ./node_modules/@vercel/ncc/dist/ncc/@@notfound.js?front-matter
+var _notfoundfront_matter = __nccwpck_require__(9576);
+;// CONCATENATED MODULE: ./src/rules/authors.js
+
+/* harmony default export */ async function authors(_octokit, _config, files) {
+    // Get results
+    let res = await Promise.all(files.map(async (file) => {
+        var _a, _b, _c;
+        if (!file.filename.endsWith(".md"))
+            return [];
+        let frontMatter = _notfoundfront_matter(file.previous_contents);
+        if (["removed", "modified", "renamed"].includes(file.status) && ((_a = frontMatter.attributes) === null || _a === void 0 ? void 0 : _a.status) != "living") { // Living EIPs should only need editor approval
+            return [{
+                    name: "authors",
+                    reviewers: ((_b = frontMatter.attributes.authors) === null || _b === void 0 ? void 0 : _b.split(/\((.*?)\)/)) || [],
+                    min: Math.ceil((((_c = frontMatter.attributes.authors) === null || _c === void 0 ? void 0 : _c.split(/\((.*?)\)/)) || []).length / 2),
+                    annotation: {
+                        file: file.filename
+                    }
+                }];
+        }
+        return [];
+    }));
+    // Merge results
+    let ret = [];
+    res.forEach(val => ret.push(...val));
+    return ret;
+}
+
+;// CONCATENATED MODULE: ./src/rules/statuschange.js
+
+let statusOrder = ["withdrawn", "stagnant", "draft", "review", "last-call", "final", "living"];
+/* harmony default export */ async function statuschange(_octokit, config, files) {
+    // Get results
+    let res = await Promise.all(files.map(async (file) => {
+        var _a, _b, _c, _d;
+        if (!file.filename.endsWith(".md"))
+            return [];
+        let frontMatter = _notfoundfront_matter(file.previous_contents);
+        let frontMatterNew = _notfoundfront_matter(file.contents);
+        if (statusOrder.indexOf((_a = frontMatter.attributes) === null || _a === void 0 ? void 0 : _a.status) < statusOrder.indexOf((_b = frontMatterNew.attributes) === null || _b === void 0 ? void 0 : _b.status)) {
+            return [{
+                    name: "statuschange",
+                    reviewers: config[(((_c = frontMatterNew.attributes) === null || _c === void 0 ? void 0 : _c.category) || ((_d = frontMatterNew.attributes) === null || _d === void 0 ? void 0 : _d.type) || "all").toLowerCase()],
+                    min: 1,
+                    annotation: {
+                        file: file.filename
+                    }
+                }];
+        }
+        return [];
+    }));
+    // Merge results
+    let ret = [];
+    res.forEach(val => ret.push(...val));
+    return ret;
+}
+
+;// CONCATENATED MODULE: ./src/rules/terminal.js
+
+/* harmony default export */ async function terminal(_octokit, config, files) {
+    // Get results
+    let res = await Promise.all(files.map(async (file) => {
+        var _a;
+        if (!file.filename.endsWith(".md"))
+            return [];
+        let frontMatter = _notfoundfront_matter(file.previous_contents);
+        if (["living", "final", "stagnant", "withdrawn"].includes((_a = frontMatter.attributes) === null || _a === void 0 ? void 0 : _a.status)) {
+            return [{
+                    name: "terminal",
+                    reviewers: config.all,
+                    min: Math.floor(config.all.length / 2),
+                    annotation: {
+                        file: file.filename
+                    }
+                }];
+        }
+        return [];
+    }));
+    // Merge results
+    let ret = [];
+    res.forEach(val => ret.push(...val));
+    return ret;
+}
+
+;// CONCATENATED MODULE: ./src/rules/unknown.js
+/* harmony default export */ async function unknown(_octokit, config, files) {
+    // Get results
+    let res = await Promise.all(files.map(async (file) => {
+        if (file.filename.startsWith("EIPS/") || file.filename.startsWith("assets/"))
+            return []; // All of those cases are handled by the other rules
+        return [{
+                name: "unknown",
+                reviewers: config.all,
+                min: Math.floor(config.all.length / 2),
+                annotation: {
+                    file: file.filename
+                }
+            }];
+    }));
+    // Merge results
+    let ret = [];
+    res.forEach(val => ret.push(...val));
+    return ret;
+}
+
+;// CONCATENATED MODULE: ./src/process.js
 
 
 
 
 
 
-const unknown = "<unknown>";
-const ThrottledOctokit = _actions_github_lib_utils_js__WEBPACK_IMPORTED_MODULE_2__.GitHub.plugin(_octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_5__/* .throttling */ .O);
+
+let rules = [assets, authors, statuschange, terminal, unknown];
+/* harmony default export */ async function src_process(octokit, config, files) {
+    let files2 = await Promise.all(files.map(async (file) => {
+        // Deconstruct
+        const payload = github.context.payload;
+        const { repository, pull_request } = payload;
+        // Get file contents
+        if (["removed", "modified", "renamed"].includes(file.status)) {
+            const response = await octokit.request(`GET /repos/${repository.owner.login}/${repository.name}/contents/${file.previous_filename || file.filename}`);
+            file.previous_contents = Buffer.from(response.data.content, "base64").toString("utf8");
+            if (!file.previous_contents) {
+                core.warning(`Could not get previous contents of ${file.filename}`, { file: file.filename });
+            }
+        }
+        if (["modified", "renamed", "added", "copied"].includes(file.status)) {
+            const response = await octokit.request(`GET /repos/${pull_request.base.repo.owner.login}/${pull_request.base.repo.name}/contents/${file.filename}?ref=${pull_request.head.sha}`);
+            file.contents = Buffer.from(response.data.content, "base64").toString("utf8");
+            if (!file.contents) {
+                core.warning(`Could not get new contents of ${file.filename}`, { file: file.filename });
+            }
+        }
+        return file;
+    }));
+    // Get results
+    let res = await Promise.all(rules.map(rule => rule(octokit, config, files2)));
+    // Merge results
+    let ret = [];
+    res.forEach(val => ret.push(...val));
+    return ret;
+}
+
+;// CONCATENATED MODULE: ./src/action.js
+
+
+
+
+
+
+const action_unknown = "<unknown>";
+const ThrottledOctokit = utils.GitHub.plugin(dist_node/* throttling */.O);
 // Initialize GitHub API
-const GITHUB_TOKEN = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token');
-const octokit = new ThrottledOctokit((0,_actions_github_lib_utils_js__WEBPACK_IMPORTED_MODULE_2__.getOctokitOptions)(GITHUB_TOKEN, { throttle: {
+const GITHUB_TOKEN = core.getInput('token');
+const octokit = new ThrottledOctokit((0,utils.getOctokitOptions)(GITHUB_TOKEN, { throttle: {
         onRateLimit: (retryAfter, options) => {
             var _a;
-            octokit.log.warn(`Request quota exhausted for request ${(options === null || options === void 0 ? void 0 : options.method) || unknown} ${(options === null || options === void 0 ? void 0 : options.url) || unknown}`);
+            octokit.log.warn(`Request quota exhausted for request ${(options === null || options === void 0 ? void 0 : options.method) || action_unknown} ${(options === null || options === void 0 ? void 0 : options.url) || action_unknown}`);
             if (((_a = options === null || options === void 0 ? void 0 : options.request) === null || _a === void 0 ? void 0 : _a.retryCount) <= 2) {
                 console.log(`Retrying after ${retryAfter} seconds!`);
                 return true;
             }
         },
-        onSecondaryRateLimit: (_retryAfter, options) => octokit.log.warn(`Abuse detected for request ${(options === null || options === void 0 ? void 0 : options.method) || unknown} ${(options === null || options === void 0 ? void 0 : options.url) || unknown}`),
+        onSecondaryRateLimit: (_retryAfter, options) => octokit.log.warn(`Abuse detected for request ${(options === null || options === void 0 ? void 0 : options.method) || action_unknown} ${(options === null || options === void 0 ? void 0 : options.url) || action_unknown}`),
     } }));
 async function run() {
     var _a, _b;
     // Deconstruct the payload
-    const payload = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload;
+    const payload = github.context.payload;
     const { repository, pull_request } = payload;
     // Parse config file
     const response = await octokit.request(`GET /repos/${repository.owner.login}/${repository.name}/contents/eip-editors.yml`);
     if (response.status !== 200) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed('Could not find eip-editors.yml');
+        core.setFailed('Could not find eip-editors.yml');
         process.exit(3);
     }
-    const config = (0,yaml__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .Qc)(Buffer.from(response.data.content, "base64").toString("utf8"));
+    const config = (0,dist/* parse */.Qc)(Buffer.from(response.data.content, "base64").toString("utf8"));
     // Process files
     const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
         owner: pull_request.base.repo.owner.login,
         repo: pull_request.base.repo.name,
         pull_number: pull_request.number,
     });
-    let result = await _process__WEBPACK_IMPORTED_MODULE_4__(octokit, config, files);
+    let result = await src_process(octokit, config, files);
     // Set the output
     let requiredReviewers = new Set();
     let reviewedBy = new Set();
@@ -16782,7 +16959,7 @@ async function run() {
             }
         }
         if (!passed) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(`Rule ${rule.name} requires ${rule.min} more reviewers: ${requesting.map(requesting => `@${requesting}`).join(", ")}`, rule.annotation);
+            core.error(`Rule ${rule.name} requires ${rule.min} more reviewers: ${requesting.map(requesting => `@${requesting}`).join(", ")}`, rule.annotation);
         }
     }
     if (requiredReviewers.size) {
@@ -16803,7 +16980,7 @@ async function run() {
         });
     }
     if (!wholePassed) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed('Not all reviewers have approved the pull request');
+        core.setFailed('Not all reviewers have approved the pull request');
         process.exit(2);
     }
 }

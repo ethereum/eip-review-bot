@@ -1,0 +1,31 @@
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+      
+      - name: Setup
+        uses: actions/setup-node@2fddd8803e2f5c9604345a0b591c3020ee971a93 # v3.4.1
+        with:
+          node-version: 16
+      
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Push
+        uses: EndBug/add-and-commit@998652d28d7702d095d40f52ae42982a80ae8c7d # v9.0.1
+        with:
+          default_author: github_actions
+          message: Update
+          push: true

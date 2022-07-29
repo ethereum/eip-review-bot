@@ -19007,7 +19007,7 @@ async function run() {
     const response = await octokit.request(`GET /repos/${repository.owner.login}/${repository.name}/contents/eip-editors.yml`);
     if (response.status !== 200) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed('Could not find eip-editors.yml');
-        process.exit(1);
+        process.exit(3);
     }
     const config = (0,yaml__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .Qc)(Buffer.from(response.data.content, "base64").toString("utf8"));
     // Process files
@@ -19044,11 +19044,22 @@ async function run() {
             reviewedBy.add((_b = review.user) === null || _b === void 0 ? void 0 : _b.login);
         }
     }
+    let wholePassed = true;
     for (let rule of result) {
+        let passed = true;
+        let requesting = [];
         for (let reviewer of rule.reviewers) {
             if (!reviewedBy.has(reviewer) && !requestedReviews.includes(reviewer)) {
                 requiredReviewers.add(reviewer);
             }
+            if (!reviewedBy.has(reviewer)) {
+                wholePassed = false;
+                passed = false;
+                requesting.push(reviewer);
+            }
+        }
+        if (!passed) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(`Rule ${rule.name} requires ${rule.min} more reviewers: ${requesting.map(requesting => `@${requesting}`).join(", ")}`, rule.annotation);
         }
     }
     if (requiredReviewers.size) {
@@ -19067,6 +19078,10 @@ async function run() {
             pull_number: pull_request.number,
             reviewers: reviewersToDismiss,
         });
+    }
+    if (!wholePassed) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed('Not all reviewers have approved the pull request');
+        process.exit(2);
     }
 }
 ;

@@ -54,14 +54,14 @@ async function run() {
         pull_number: pull_request.number,
     });
 
-    core.debug(JSON.stringify(result, null, 2));
+    console.log(JSON.stringify(result, null, 2));
 
     const requestedReviews = (await octokit.paginate(octokit.rest.pulls.listRequestedReviewers, {
         owner: pull_request.base.repo.owner.login,
         repo: pull_request.base.repo.name,
         pull_number: pull_request.number,
     })).map((reviewer: any) => {
-        core.debug(JSON.stringify(reviewer, null, 2));
+        console.log(JSON.stringify(reviewer, null, 2));
         return reviewer.login as string;
     });
 
@@ -79,7 +79,7 @@ async function run() {
         }
     }
 
-    core.debug(JSON.stringify(result, null, 2));
+    console.log(JSON.stringify(result, null, 2));
 
     let wholePassed = true;
     for (let rule of result) {

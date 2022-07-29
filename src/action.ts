@@ -31,7 +31,7 @@ async function run() {
     const response = await octokit.request(`GET /repos/${repository.owner.login}/${repository.name}/contents/eip-editors.yml`);
     if (response.status !== 200) {
         core.setFailed('Could not find eip-editors.yml');
-        process.exit(1);
+        process.exit(3);
     }
     const config = parse(Buffer.from(response.data.content, "base64").toString("utf8")) as { [key: string]: string[]; };
 
@@ -74,11 +74,22 @@ async function run() {
         }
     }
 
+    let wholePassed = true;
     for (let rule of result) {
+        let passed = true;
+        let requesting = [];
         for (let reviewer of rule.reviewers) {
             if (!reviewedBy.has(reviewer) && !requestedReviews.includes(reviewer)) {
                 requiredReviewers.add(reviewer);
             }
+            if (!reviewedBy.has(reviewer)) {
+                wholePassed = false;
+                passed = false;
+                requesting.push(reviewer);
+            }
+        }
+        if (!passed) {
+            core.error(`Rule ${rule.name} requires ${rule.min} more reviewers: ${requesting.map(requesting => `@${requesting}`).join(", ")}`, rule.annotation);
         }
     }
 
@@ -99,6 +110,11 @@ async function run() {
             pull_number: pull_request.number,
             reviewers: reviewersToDismiss,
         });
+    }
+
+    if (!wholePassed) {
+        core.setFailed('Not all reviewers have approved the pull request');
+        process.exit(2);
     }
 };
 

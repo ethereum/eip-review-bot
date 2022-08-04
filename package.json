@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/action.ts --bundle --platform=node --target=node16 --outfile=dist/index.js"
+    "build": "esbuild src/action.ts --bundle --platform=node --target=node16 --outfile=dist/index.js && echo { \"type\": \"commonjs\" } > dist/package.json"
   },
   "repository": {
     "type": "git",

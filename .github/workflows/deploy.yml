@@ -23,9 +23,10 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Push
-        uses: EndBug/add-and-commit@998652d28d7702d095d40f52ae42982a80ae8c7d # v9.0.1
+      - name: Commit & Push changes
+        uses: actions-js/push@5f565701a8b9f9aa6b7efc25f28994eabfcf5312
         with:
-          default_author: github_actions
-          message: Update
-          push: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          message: Update dist/index.js; ${{ github.event.head_commit.message }}
+          branch: dist
+          force: true

@@ -15,8 +15,18 @@ let rules = [ checkAssets, checkAuthors, checkNew, checkStatus, checkTerminalSta
 export default async function(octokit: Octokit, config: Config, files: File[]) {
     let files2: File[] = await Promise.all(files.map(async file => {
         // Deconstruct
-        const payload = github.context.payload as PullRequestEvent;
-        const { repository, pull_request } = payload;
+        const payload = github.context.payload as Partial<PullRequestEvent>;
+        let { repository, pull_request } = payload;
+        let pull_number = pull_request?.number;
+        if (!pull_number) {
+            pull_number = parseInt(core.getInput('pr_number'));
+            const pr = await octokit.rest.pulls.get({
+              owner: repository.owner.login,
+              repo: repository.name,
+              pull_number,
+            });
+            pull_request = pr.data;
+        }
         
         // Get file contents
         if (["removed", "modified", "renamed"].includes(file.status)) {

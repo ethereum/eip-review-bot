@@ -106,6 +106,30 @@ async function run() {
     if (comment == '') {
         comment = 'All reviewers have approved. Auto merging...';
     }
+    
+    let me = await octokit.rest.users.getAuthenticated();
+    let comments = await octokit.rest.issues.listComments({
+        owner: repository.owner.login,
+        repo: repository.name,
+        issue_number: pull_number
+    });
+    
+    let previous_comment = comments.data.find(comment => comment.user.login == me.data.login);
+    if (previous_comment) {
+        await octokit.rest.issues.updateComment({
+            owner: repository.owner.login,
+            repo: repository.name,
+            comment_id: previous_comment.id,
+            body: comment
+        });
+    } else {
+        await octokit.rest.issues.createComment({
+            owner: repository.owner.login,
+            repo: repository.name,
+            issue_number: pull_number,
+            body: comment
+        });
+    }
 
     if (!wholePassed) {
         core.setFailed('Not all reviewers have approved the pull request');

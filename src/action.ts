@@ -81,6 +81,7 @@ async function run() {
     }
 
     let wholePassed = true;
+    let comment = '';
     for (let rule of result) {
         let passed = true;
         let requesting = [];
@@ -99,27 +100,12 @@ async function run() {
         }
         if (!passed) {
             core.error(`Rule ${rule.name} requires ${rule.min} more reviewers: ${requesting.map(requesting => `@${requesting}`).join(", ")}`, rule.annotation);
+            comment = `${comment}\n\n### ${rule.annotation.file}\n\nRule ${rule.name}\nRequires ${rule.min} more reviewers from ${requesting.map(requesting => `@${requesting}`)}`;
         }
     }
-
-    if (requiredReviewers.size) {
-        octokit.rest.pulls.requestReviewers({
-            owner: repository.owner.login,
-            repo: repository.name,
-            pull_number,
-            reviewers: [...requiredReviewers],
-        });
+    if (comment == '') {
+        comment = 'All reviewers have approved. Auto merging...';
     }
-
-    /*let reviewersToDismiss = requestedReviews.filter(reviewer => !requiredReviewers.has(reviewer)).filter(reviewer => !reviewedBy.has(reviewer));
-    if (reviewersToDismiss.length) {
-        octokit.rest.pulls.removeRequestedReviewers({
-            owner: repository.owner.login,
-            repo: repository.name,
-            pull_number: pull_request.number,
-            reviewers: reviewersToDismiss,
-        });
-    }*/
 
     if (!wholePassed) {
         core.setFailed('Not all reviewers have approved the pull request');

@@ -104,7 +104,7 @@ async function run() {
     }
     
     for (let file in filesToRules) {
-        comment = `${comment}\n\n### File \`${rule.annotation.file}\`\n\n`;
+        comment = `${comment}\n\n### File \`${file}\`\n\n`;
         let pastReviewers = [];
         for (let rule of filesToRules[file]) {
             for (let rule2 of filesToRules[file]) {

@@ -4,14 +4,14 @@ import fm from "front-matter";
 export default async function (_octokit: Octokit, _config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results
     let res : Rule[][] = await Promise.all(files.map(async file => {
-        if (!file.filename.endsWith(".md")) return [];
+        if (!file.filename.endsWith(".md") || !file.filename.startsWith("EIPS")) return [];
 
-        let frontMatter = fm<FrontMatter>(file.previous_contents as string);
+        let frontMatter = fm<FrontMatter>((file.previous_contents || file.contents) as string);
 
         if (file.status.toLowerCase() != 'added' && frontMatter.attributes?.status != "living") { // Living EIPs should only need editor approval
             return [{
                 name: "authors",
-                reviewers: frontMatter.attributes.authors?.split(/\((.*?)\)/) || [],
+                reviewers: frontMatter.attributes.authors?.split(/\(@(.*?)\)/).filter((_, index) => index % 2 === 1) || [],
                 min: 1,
                 annotation: {
                     file: file.filename

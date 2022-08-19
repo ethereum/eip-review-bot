@@ -8,11 +8,11 @@ export default async function (_octokit: Octokit, _config: Config, files: File[]
 
         let frontMatter = fm<FrontMatter>(file.previous_contents as string);
 
-        if (["removed", "modified", "renamed"].includes(file.status) && frontMatter.attributes?.status != "living") { // Living EIPs should only need editor approval
+        if (file.status.toLowerCase() != 'added' && frontMatter.attributes?.status != "living") { // Living EIPs should only need editor approval
             return [{
                 name: "authors",
                 reviewers: frontMatter.attributes.authors?.split(/\((.*?)\)/) || [],
-                min: Math.ceil((frontMatter.attributes.authors?.split(/\((.*?)\)/) || []).length / 2),
+                min: 1,
                 annotation: {
                     file: file.filename
                 }

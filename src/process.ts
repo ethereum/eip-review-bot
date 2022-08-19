@@ -30,7 +30,11 @@ export default async function(octokit: Octokit, config: Config, files: File[]) {
         
         // Get file contents
         if (["removed", "modified", "renamed"].includes(file.status)) {
-            const response = await octokit.request(`GET /repos/${repository.owner.login}/${repository.name}/contents/${file.previous_filename || file.filename}`);
+            const response = await octokit.rest.repos.getContent({
+                owner: repository.owner.login,
+                repo: repository.name,
+                path: file.previous_filename || file.filename
+            });
             file.previous_contents = Buffer.from(response.data.content, "base64").toString("utf8");
             if (!file.previous_contents) {
                 core.warning(`Could not get previous contents of ${file.filename}`, { file: file.filename });
@@ -38,7 +42,12 @@ export default async function(octokit: Octokit, config: Config, files: File[]) {
         }
 
         if (["modified", "renamed", "added", "copied"].includes(file.status)) {
-            const response = await octokit.request(`GET /repos/${pull_request.base.repo.owner.login}/${pull_request.base.repo.name}/contents/${file.filename}?ref=${pull_request.head.sha}`);
+            const response = await octokit.rest.repos.getContent({
+                owner: pull_request.base.repo.owner.login,
+                repo: pull_request.base.repo.name,
+                path: file.filename,
+                ref: pull_request.base.ref
+            });
             file.contents = Buffer.from(response.data.content, "base64").toString("utf8");
             if (!file.contents) {
                 core.warning(`Could not get new contents of ${file.filename}`, { file: file.filename });

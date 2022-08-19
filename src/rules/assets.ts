@@ -7,7 +7,7 @@ export default async function (octokit: Octokit, config: Config, files: File[] )
         if (!file.filename.startsWith("assets/") || files.some(f => f.filename == `EIPS/${file.filename.split("/")[2]}.md`)) return [];
 
         return processFiles(octokit, config, [{
-            filename: `EIPS/${file.filename.split("/")[2]}.md`,
+            filename: `EIPS/${file.filename.split("/")[1]}.md`,
             status: 'modified'
         }]);
     }));

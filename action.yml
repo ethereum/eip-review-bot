@@ -6,6 +6,10 @@ inputs:
   token:
     description: GitHub token with repo permissions
     required: true
+  config:
+    description: Config file location
+    required: false
+    default: ''
   pr_number:
     description: The PR Number
     required: false

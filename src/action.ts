@@ -32,7 +32,7 @@ async function run() {
     }
 
     // Parse config file
-    const response = await octokit.request(`GET /repos/${repository.owner.login}/${repository.name}/contents/eip-editors.yml`);
+    const response = await octokit.request(`GET /repos/${repository.owner.login}/${repository.name}/contents/${core.getInput('config') || 'eip-editors.yml'}`);
     if (response.status !== 200) {
         core.setFailed('Could not find eip-editors.yml');
         process.exit(3);

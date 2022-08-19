@@ -24,8 +24,12 @@ const octokit = new ThrottledOctokit(getOctokitOptions(GITHUB_TOKEN, { throttle:
 
 async function run() {
     // Deconstruct the payload
-    const payload = github.context.payload as PullRequestEvent;
+    const payload = github.context.payload as Partial<PullRequestEvent>;
     const { repository, pull_request } = payload;
+    let pull_number = pull_request?.number;
+    if (!pull_number) {
+        pull_number = parseInt(core.getInput('pr_number'));
+    }
 
     // Parse config file
     const response = await octokit.request(`GET /repos/${repository.owner.login}/${repository.name}/contents/eip-editors.yml`);
@@ -39,7 +43,7 @@ async function run() {
     const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
         owner: repository.owner.login,
         repo: repository.name,
-        pull_number: pull_request.number,
+        pull_numbe
     });
 
     let result: Rule[] = await processFiles(octokit, config, files);
@@ -51,19 +55,19 @@ async function run() {
     const reviews = await octokit.paginate(octokit.rest.pulls.listReviews, {
         owner: repository.owner.login,
         repo: repository.name,
-        pull_number: pull_request.number,
+        pull_number
     });
 
     const requestedReviews = (await octokit.paginate(octokit.rest.pulls.listRequestedReviewers, {
         owner: repository.owner.login,
         repo: repository.name,
-        pull_number: pull_request.number,
+        pull_number
     })).map((reviewer: any) => {
         return reviewer.login as string;
     });
 
     for (let review of reviews) {
-        if (review.state == 'APPROVED' && review.commit_id == pull_request.head.sha && review.user?.login) {
+        if (review.state == 'APPROVED' && review.user?.login) {
             result = result.map((rule: Rule): Rule => {
                 if (rule.reviewers.includes(review.user?.login as string)) {
                     rule.min = rule.min - 1;
@@ -102,7 +106,7 @@ async function run() {
         octokit.rest.pulls.requestReviewers({
             owner: repository.owner.login,
             repo: repository.name,
-            pull_number: pull_request.number,
+            pull_number,
             reviewers: [...requiredReviewers],
         });
     }

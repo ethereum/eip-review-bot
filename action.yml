@@ -1,11 +1,15 @@
 name: EIP Manager
-description: Automatically add labels depending on Jekyll front matter attributes
+description: Request reviewers for EIP modifications
 author: Pandapip1
 
 inputs:
   token:
     description: GitHub token with repo permissions
     required: true
+  pr_number:
+    description: The PR Number
+    required: false
+    default: ''
 
 runs:
   using: node16

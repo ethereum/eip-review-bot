@@ -43,7 +43,7 @@ async function run() {
     const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
         owner: repository.owner.login,
         repo: repository.name,
-        pull_numbe
+        pull_number
     });
 
     let result: Rule[] = await processFiles(octokit, config, files);

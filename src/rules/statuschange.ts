@@ -1,7 +1,7 @@
 import fm from "front-matter";
 import { Octokit, Config, FrontMatter, File, Rule } from "../types.js";
 
-let statusOrder = ["withdrawn", "stagnant", "draft", "review", "last-call", "final", "living"];
+let statusOrder = ["withdrawn", "stagnant", "draft", "review", "last call", "final", "living"];
 
 export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results
@@ -10,8 +10,11 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
 
         let frontMatter = fm<FrontMatter>(file.previous_contents as string);
         let frontMatterNew = fm<FrontMatter>(file.contents as string);
+        
+        let statusOld = frontMatter.attributes?.status?.toLowerCase();
+        let statusNew = frontMatterNew.attributes?.status?.toLowerCase();
 
-        if (statusOrder.indexOf(frontMatter.attributes?.status as string) < statusOrder.indexOf(frontMatterNew.attributes?.status as string)) {
+        if (statusOrder.indexOf(statusOld) < statusOrder.indexOf(statusNew)) {
             return [{
                 name: "statuschange",
                 reviewers: config[(frontMatterNew.attributes?.category || frontMatterNew.attributes?.type || "all").toLowerCase()],

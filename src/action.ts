@@ -82,15 +82,13 @@ async function run() {
 
     let wholePassed = true;
     let comment = '';
+    let filesToRules = {};
     for (let rule of result) {
         let passed = true;
         let requesting = [];
         for (let reviewer of rule.reviewers) {
             if (!reviewedBy.has(reviewer) && !requestedReviews.includes(reviewer)) {
                 requiredReviewers.add(reviewer);
-                console.log(`Requesting ${reviewer}`);
-                console.log(`Requested ${requiredReviewers}`);
-                console.log(`Size ${requiredReviewers.size}`);
             }
             if (!reviewedBy.has(reviewer)) {
                 wholePassed = false;
@@ -100,9 +98,29 @@ async function run() {
         }
         if (!passed) {
             core.error(`Rule ${rule.name} requires ${rule.min} more reviewers: ${requesting.map(requesting => `@${requesting}`).join(", ")}`, rule.annotation);
-            comment = `${comment}\n\n### ${rule.annotation.file}\n\nRule ${rule.name}\nRequires ${rule.min} more reviewers from ${requesting.map(requesting => `@${requesting}`)}`;
+            filesToRules[rule.annotation.file] = filesToRules[rule.annotation.file] || [];
+            filesToRules[rule.annotation.file].push({ min: rule.min, requesting });
         }
     }
+    
+    for (let file in filesToRules) {
+        comment = `${comment}\n\n### File \`${rule.annotation.file}\`\n\n`;
+        let pastReviewers = [];
+        for (let rule of filesToRules[file]) {
+            for (let rule2 of filesToRules[file]) {
+                if (!pastReviewers.includes(rule.requesting.sort().join(',')) && rule.requesting.sort().join(',') === rule2.requesting.sort().join(',')) {
+                    pastReviewers.push(rule.requesting.sort().join(','));
+                    if (rule2.min > rule.min) {
+                        comment = `${comment}Requires ${rule2.min} more reviewers from ${rule.requesting.map(requesting => `@${requesting}`).join(", ")}\n`;
+                    } else {
+                        comment = `${comment}Requires ${rule.min} more reviewers from ${rule.requesting.map(requesting => `@${requesting}`).join(", ")}\n`;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    
     if (comment == '') {
         comment = 'All reviewers have approved. Auto merging...';
     }

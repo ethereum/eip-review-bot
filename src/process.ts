@@ -31,9 +31,10 @@ export default async function(octokit: Octokit, config: Config, files: File[]) {
         // Get file contents
         if (["removed", "modified", "renamed"].includes(file.status)) {
             const response = await octokit.rest.repos.getContent({
-                owner: repository.owner.login,
-                repo: repository.name,
-                path: file.previous_filename || file.filename
+                owner: pull_request.base.repo.owner.login,
+                repo: pull_request.base.repo.name,
+                path: file.previous_filename || file.filename,
+                ref: pull_request.base.ref
             });
             file.previous_contents = Buffer.from(response.data.content, "base64").toString("utf8");
             if (!file.previous_contents) {
@@ -43,10 +44,10 @@ export default async function(octokit: Octokit, config: Config, files: File[]) {
 
         if (["modified", "renamed", "added", "copied"].includes(file.status)) {
             const response = await octokit.rest.repos.getContent({
-                owner: pull_request.base.repo.owner.login,
-                repo: pull_request.base.repo.name,
+                owner: pull_request.head.repo.owner.login,
+                repo: pull_request.head.repo.name,
                 path: file.filename,
-                ref: pull_request.base.ref
+                ref: pull_request.head.ref
             });
             file.contents = Buffer.from(response.data.content, "base64").toString("utf8");
             if (!file.contents) {

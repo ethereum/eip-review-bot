@@ -1,5 +1,5 @@
 {
-  "name": "eipm",
+  "name": "eip-review-bot",
   "version": "0.0.1",
   "description": "Request reviewers for EIP modifications",
   "main": "dist/index.js",

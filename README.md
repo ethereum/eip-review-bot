@@ -1,3 +1,3 @@
-# eipm
+# eip-review-bot
 
-Request reviewers for the `ethereum/EIPs` repository.
+Automatically request reviewers for the `ethereum/EIPs` repository.

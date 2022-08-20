@@ -1,6 +1,6 @@
-name: EIP Manager
+name: EIP Review Bot
 description: Request reviewers for EIP modifications
-author: Pandapip1
+author: ethereum
 
 inputs:
   token:

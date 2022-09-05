@@ -22,7 +22,7 @@
     "@actions/github": "^5.0.3"
   },
   "dependencies": {
-    "@octokit/plugin-throttling": "^4.2.0",
+    "@octokit/plugin-throttling": "^4.3.0",
     "@octokit/webhooks-types": "^6.3.6",
     "@types/node": "^18.7.14",
     "before-after-hook": "^2.2.2",

@@ -25,7 +25,7 @@
     "@octokit/plugin-throttling": "^4.3.0",
     "@octokit/webhooks-types": "^6.3.6",
     "@types/node": "^18.8.1",
-    "before-after-hook": "^2.2.2",
+    "before-after-hook": "^3.0.1",
     "bottleneck": "^2.19.5",
     "encoding": "^0.1.13",
     "esbuild": "^0.15.10",

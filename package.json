@@ -19,7 +19,7 @@
   "homepage": "https://github.com/Pandapip1/eipm#readme",
   "devDependencies": {
     "@actions/core": "^1.10.0",
-    "@actions/github": "^5.1.0"
+    "@actions/github": "^5.1.1"
   },
   "dependencies": {
     "@octokit/plugin-throttling": "^4.3.0",

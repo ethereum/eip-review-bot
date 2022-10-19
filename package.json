@@ -24,7 +24,7 @@
   "dependencies": {
     "@octokit/plugin-throttling": "^4.3.1",
     "@octokit/webhooks-types": "^6.5.0",
-    "@types/node": "^18.8.4",
+    "@types/node": "^18.11.2",
     "before-after-hook": "^3.0.2",
     "bottleneck": "^2.19.5",
     "encoding": "^0.1.13",

@@ -28,7 +28,7 @@
     "before-after-hook": "^3.0.2",
     "bottleneck": "^2.19.5",
     "encoding": "^0.1.13",
-    "esbuild": "^0.15.11",
+    "esbuild": "^0.15.12",
     "front-matter": "^4.0.2",
     "js-yaml": "^4.1.0",
     "once": "^1.4.0",

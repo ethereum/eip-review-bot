@@ -11,6 +11,10 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         let frontMatter = fm<FrontMatter>(file.previous_contents as string);
         let frontMatterNew = fm<FrontMatter>(file.contents as string);
         
+        if (!frontMatter.attributes?.status || !frontMatterNew.attributes?.status) {
+            throw `Missing status for file ${file.filename.endsWith(".md")}`;
+        }
+        
         let statusOld = frontMatter.attributes?.status?.toLowerCase();
         let statusNew = frontMatterNew.attributes?.status?.toLowerCase();
 

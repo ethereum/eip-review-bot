@@ -9,7 +9,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         let frontMatter = fm<FrontMatter>(file.previous_contents as string);
         let status = frontMatter.attributes?.status?.toLowerCase();
         
-        if (["living", "final", "stagnant", "withdrawn"].includes(status)) {
+        if (["living", "final", "withdrawn"].includes(status)) {
             return [{
                 name: "terminal",
                 reviewers: config.all,

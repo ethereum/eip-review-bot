@@ -13,7 +13,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
             return [{
                 name: "terminal",
                 reviewers: config.all,
-                min: Math.floor(config.all.length / 2),
+                min: 1,
                 annotation: {
                     file: file.filename
                 }

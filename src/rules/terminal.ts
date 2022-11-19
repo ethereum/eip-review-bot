@@ -12,7 +12,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         if (["living", "final", "stagnant", "withdrawn"].includes(status)) {
             return [{
                 name: "terminal",
-                reviewers: config.all,
+                reviewers: config[(frontMatter.attributes?.category || frontMatter.attributes?.type || "all").toLowerCase()],
                 min: 1,
                 annotation: {
                     file: file.filename

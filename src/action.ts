@@ -31,10 +31,15 @@ async function run() {
         pull_number = parseInt(core.getInput('pr_number'));
     }
 
-    // Parse config file
-    const response = await octokit.request(`GET /repos/${repository.owner.login}/${repository.name}/contents/${core.getInput('config') || 'eip-editors.yml'}`);
+    // Pull and parse config file from EIPs repository (NOT PR HEAD)
+    
+    const response = await octokit.rest.repos.getContent({
+        owner: repository.owner.login,
+        repo: repository.name,
+        path: core.getInput('config') || 'eip-editors.yml'
+    });
     if (response.status !== 200) {
-        core.setFailed('Could not find eip-editors.yml');
+        core.setFailed(`Could not find file "${core.getInput('config') || 'eip-editors.yml'}"`);
         process.exit(3);
     }
     const config = parse(Buffer.from(response.data.content, "base64").toString("utf8")) as { [key: string]: string[]; };

@@ -9,11 +9,11 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         let frontMatter = fm<FrontMatter>(file.previous_contents as string);
         let status = frontMatter.attributes?.status?.toLowerCase();
         
-        if (["living", "final", "withdrawn"].includes(status)) {
+        if (status == "stagnant") {
             return [{
-                name: "terminal",
-                reviewers: config.all,
-                min: Math.floor(config.all.length / 2),
+                name: "stagnant",
+                reviewers: config[(frontMatterNew.attributes?.category || frontMatterNew.attributes?.type || "all").toLowerCase()],
+                min: 1,
                 annotation: {
                     file: file.filename
                 }

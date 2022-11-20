@@ -7,10 +7,11 @@ import checkAssets from './rules/assets.js';
 import checkAuthors from './rules/authors.js';
 import checkNew from './rules/new.js';
 import checkStatus from './rules/statuschange.js';
+import checkStagnant from './rules/stagnant.js';
 import checkTerminalStatus from './rules/terminal.js';
 import checkOtherFiles from './rules/unknown.js';
 
-let rules = [ checkAssets, checkAuthors, checkNew, checkStatus, checkTerminalStatus, checkOtherFiles ];
+let rules = [ checkAssets, checkAuthors, checkNew, checkStatus, checkStagnant, checkTerminalStatus, checkOtherFiles ];
 
 export default async function(octokit: Octokit, config: Config, files: File[]) {
     let files2: File[] = await Promise.all(files.map(async file => {

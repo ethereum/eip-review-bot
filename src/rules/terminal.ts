@@ -7,7 +7,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         if (!file.filename.endsWith(".md")) return [];
 
         let frontMatter = fm<FrontMatter>(file.previous_contents as string);
-        let status = frontMatter.attributes?.status?.toLowerCase();
+        let status = frontMatter.attributes?.status?.toLowerCase() as string;
         
         if (["living", "final", "withdrawn"].includes(status)) {
             return [{

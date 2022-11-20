@@ -1,6 +1,6 @@
 import github from '@actions/github';
 import core from '@actions/core';
-import { PullRequestEvent } from '@octokit/webhooks-types';
+import { PullRequestEvent, PullRequest, Repository } from '@octokit/webhooks-types';
 import { Octokit, Config, File, Rule } from "./types.js";
 
 import checkAssets from './rules/assets.js';
@@ -17,7 +17,8 @@ export default async function(octokit: Octokit, config: Config, files: File[]) {
     let files2: File[] = await Promise.all(files.map(async file => {
         // Deconstruct
         const payload = github.context.payload as Partial<PullRequestEvent>;
-        let { repository, pull_request } = payload;
+        let repository = payload.repository as Repository;
+        let pull_request = payload.pull_request as PullRequest;
         let pull_number = pull_request?.number;
         if (!pull_number) {
             pull_number = parseInt(core.getInput('pr_number'));
@@ -26,7 +27,7 @@ export default async function(octokit: Octokit, config: Config, files: File[]) {
               repo: repository.name,
               pull_number,
             });
-            pull_request = pr.data;
+            pull_request = pr.data as PullRequest;
         }
         
         // Get file contents

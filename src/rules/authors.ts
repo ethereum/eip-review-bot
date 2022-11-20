@@ -4,7 +4,7 @@ import fm from "front-matter";
 export default async function (_octokit: Octokit, _config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results
     let res : Rule[][] = await Promise.all(files.map(async file => {
-        if (!file.filename.endsWith(".md") || !file.filename.startsWith("EIPS")) {
+        if (!file.filename.endsWith(".md") || !file.filename.startsWith("EIPS/eip-")) {
             return [];
         }
 
@@ -17,6 +17,7 @@ export default async function (_octokit: Octokit, _config: Config, files: File[]
                     name: "authors",
                     reviewers: reviewers,
                     min: 1,
+                    pr_approval: true,
                     annotation: {
                         file: file.filename
                     }

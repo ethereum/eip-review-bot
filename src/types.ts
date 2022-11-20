@@ -22,6 +22,5 @@ export declare type Octokit = import("@octokit/core/dist-types").Octokit & impor
 
 export declare type Config = { [key: string]: string[] };
 export declare type FrontMatter = { [key: string]: string | undefined };
-export declare type Rule = { name: string; reviewers: string[]; min: number; annotation?: core.AnnotationProperties | undefined; };
+export declare type Rule = { name: string; reviewers: string[]; min: number; annotation: core.AnnotationProperties; pr_approval?: boolean | undefined; };
 export declare type RuleGenerator = ((octokit: Octokit, config: Config, files: File[]) => Promise<Rule[]>);
-

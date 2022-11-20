@@ -3,7 +3,7 @@ import github from '@actions/github';
 import { GitHub, getOctokitOptions } from "@actions/github/lib/utils";
 import { throttling } from "@octokit/plugin-throttling";
 import { parse } from 'yaml';
-import { PullRequestEvent } from "@octokit/webhooks-types";
+import { PullRequestEvent, Repository, PullRequest } from "@octokit/webhooks-types";
 import processFiles from './process.js';
 import { Rule } from './types.js';
 
@@ -25,7 +25,8 @@ const octokit = new ThrottledOctokit(getOctokitOptions(GITHUB_TOKEN, { throttle:
 async function run() {
     // Deconstruct the payload
     const payload = github.context.payload as Partial<PullRequestEvent>;
-    const { repository, pull_request } = payload;
+    const repository = payload.repository as Repository;
+    const pull_request = payload.pull_request as PullRequest;
     let pull_number = pull_request?.number;
     if (!pull_number) {
         pull_number = parseInt(core.getInput('pr_number'));
@@ -87,12 +88,12 @@ async function run() {
 
     let wholePassed = true;
     let comment = '';
-    let filesToRules = {};
+    let filesToRules = {} as { [key: string]: { min: number, requesting: string[] }[] };
     for (let rule of result) {
         let passed = true;
         let requesting = [];
         for (let reviewer of rule.reviewers) {
-            if (!reviewedBy.has(reviewer) && !requestedReviews.includes(reviewer)) {
+            if (!reviewedBy.has(reviewer) && !requestedReviews.includes(reviewer) && !(rule?.pr_approval && reviewer == pull_request?.user?.login)) {
                 requiredReviewers.add(reviewer);
             }
             if (!reviewedBy.has(reviewer)) {
@@ -103,14 +104,19 @@ async function run() {
         }
         if (!passed) {
             core.error(`Rule ${rule.name} requires ${rule.min} more reviewers: ${requesting.map(requesting => `@${requesting}`).join(", ")}`, rule.annotation);
-            filesToRules[rule.annotation.file] = filesToRules[rule.annotation.file] || [];
-            filesToRules[rule.annotation.file].push({ min: rule.min, requesting });
+            if (rule.annotation.file) {
+                let file = rule.annotation.file as string;
+                filesToRules[file] = filesToRules[file] || [];
+                filesToRules[file].push({ min: rule.min, requesting });
+            } else {
+                core.setFailed('Rule annotation must contain a file');
+            }
         }
     }
     
     for (let file in filesToRules) {
         comment = `${comment}\n\n### File \`${file}\`\n\n`;
-        let pastReviewers = [];
+        let pastReviewers = [] as string[];
         for (let rule of filesToRules[file]) {
             for (let rule2 of filesToRules[file]) {
                 if (!pastReviewers.includes(rule.requesting.sort().join(',')) && rule.requesting.sort().join(',') === rule2.requesting.sort().join(',')) {
@@ -137,7 +143,7 @@ async function run() {
         issue_number: pull_number
     });
     
-    let previous_comment = comments.data.find(comment => comment.user.login == me.data.login);
+    let previous_comment = comments.data.find(comment => comment?.user?.login == me.data.login);
     if (previous_comment) {
         await octokit.rest.issues.updateComment({
             owner: repository.owner.login,

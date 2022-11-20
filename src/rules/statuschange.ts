@@ -11,12 +11,19 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         let frontMatter = fm<FrontMatter>(file.previous_contents as string);
         let frontMatterNew = fm<FrontMatter>(file.contents as string);
         
-        if (!frontMatter.attributes?.status || !frontMatterNew.attributes?.status) {
-            throw `Missing status for file ${file.filename.endsWith(".md")}`;
+        if (!("status" in frontMatter.attributes && "status" in frontMatterNew.attributes)) {
+            return [{
+                name: "statuschange",
+                reviewers: config[(frontMatterNew.attributes?.category || frontMatterNew.attributes?.type || "all").toLowerCase()],
+                min: 1,
+                annotation: {
+                    file: file.filename
+                }
+            }]; // Fallback: require editor approval if there's missing statuses
         }
         
-        let statusOld = frontMatter.attributes?.status?.toLowerCase();
-        let statusNew = frontMatterNew.attributes?.status?.toLowerCase();
+        let statusOld = frontMatter.attributes?.status?.toLowerCase() as string;
+        let statusNew = frontMatterNew.attributes?.status?.toLowerCase() as string;
 
         if (statusOrder.indexOf(statusOld) < statusOrder.indexOf(statusNew)) {
             return [{

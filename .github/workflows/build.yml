@@ -1,3 +1,5 @@
+name: "Automated Build"
+
 on:
   push:
     branches:

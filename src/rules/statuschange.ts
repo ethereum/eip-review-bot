@@ -14,7 +14,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         if (!("status" in frontMatter.attributes && "status" in frontMatterNew.attributes)) {
             return [{
                 name: "statuschange",
-                reviewers: config[(frontMatterNew.attributes?.category || frontMatterNew.attributes?.type || "all").toLowerCase()],
+                reviewers: config[(frontMatterNew.attributes?.category || frontMatterNew.attributes?.type || "governance").toLowerCase()],
                 min: 1,
                 annotation: {
                     file: file.filename
@@ -28,7 +28,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         if (statusOrder.indexOf(statusOld) < statusOrder.indexOf(statusNew)) {
             return [{
                 name: "statuschange",
-                reviewers: config[(frontMatterNew.attributes?.category || frontMatterNew.attributes?.type || "all").toLowerCase()],
+                reviewers: config[(frontMatterNew.attributes?.category || frontMatterNew.attributes?.type || "governance").toLowerCase()],
                 min: 1,
                 annotation: {
                     file: file.filename

@@ -7,8 +7,8 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
 
         return [{
             name: "unknown",
-            reviewers: config.all,
-            min: Math.floor(config.all.length / 2),
+            reviewers: config.governance,
+            min: Math.floor(config.governance.length / 2),
             annotation: {
                 file: file.filename
             }

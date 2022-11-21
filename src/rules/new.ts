@@ -11,7 +11,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         if (["added"].includes(file.status)) {
             return [{
                 name: "new",
-                reviewers: config[(frontMatter.attributes?.category || frontMatter.attributes?.type || "all").toLowerCase()],
+                reviewers: config[(frontMatter.attributes?.category || frontMatter.attributes?.type || "governance").toLowerCase()],
                 min: 1,
                 annotation: {
                     file: file.filename

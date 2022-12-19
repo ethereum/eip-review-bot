@@ -26,7 +26,7 @@
     "@octokit/fixtures": "^22.0.6",
     "@octokit/plugin-throttling": "^4.3.2",
     "@octokit/rest": "^19.0.5",
-    "@octokit/webhooks-types": "^6.7.0",
+    "@octokit/webhooks-types": "^6.8.0",
     "@types/jest": "^29.2.4",
     "@types/node": "^18.11.13",
     "before-after-hook": "^3.0.2",

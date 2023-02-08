@@ -105,7 +105,7 @@ async function run() {
             if (rule.annotation.file) {
                 let file = rule.annotation.file as string;
                 filesToRules[file] = filesToRules[file] || [];
-                filesToRules[file].push({ min: rule.min, requesting });
+                filesToRules[file].push({ min: rule.min, requesting: rule.reviewers });
             } else {
                 core.setFailed('Rule annotation must contain a file');
             }

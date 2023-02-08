@@ -2,6 +2,7 @@ import fm from "front-matter";
 import { Octokit, Config, FrontMatter, File, Rule } from "../types.js";
 
 let statusOrder = ["withdrawn", "stagnant", "draft", "review", "last call", "final", "living"];
+let ignoreStatuses = ["withdrawn", "stagnant", "final", "living"];
 
 export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results
@@ -24,6 +25,10 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         
         let statusOld = frontMatter.attributes?.status?.toLowerCase() as string;
         let statusNew = frontMatterNew.attributes?.status?.toLowerCase() as string;
+        
+        if (ignoreStatuses.includes(statusOld)) {
+            return []; // Handled by other rules
+        }
 
         if (statusOrder.indexOf(statusOld) < statusOrder.indexOf(statusNew)) {
             return [{

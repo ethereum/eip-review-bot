@@ -14,6 +14,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
                 name: "stagnant",
                 reviewers: config[(frontMatter.attributes?.category || frontMatter.attributes?.type || "governance").toLowerCase()],
                 min: 1,
+                pr_approval: true,
                 annotation: {
                     file: file.filename
                 }

@@ -55,21 +55,12 @@ async function run() {
     let result: Rule[] = await processFiles(octokit, config, files);
 
     // Set the output
-    let requiredReviewers = new Set<string>();
     let reviewedBy = new Set<string>();
 
     const reviews = await octokit.paginate(octokit.rest.pulls.listReviews, {
         owner: repository.owner.login,
         repo: repository.name,
         pull_number
-    });
-
-    const requestedReviews = (await octokit.paginate(octokit.rest.pulls.listRequestedReviewers, {
-        owner: repository.owner.login,
-        repo: repository.name,
-        pull_number
-    })).map((reviewer: any) => {
-        return reviewer.login as string;
     });
 
     for (let review of reviews) {
@@ -93,13 +84,12 @@ async function run() {
         let passed = true;
         let requesting = [];
         for (let reviewer of rule.reviewers) {
-            if (!reviewedBy.has(reviewer) && !requestedReviews.includes(reviewer) && !(rule?.pr_approval && reviewer == pull_request?.user?.login)) {
-                requiredReviewers.add(reviewer);
-            }
-            if (!reviewedBy.has(reviewer)) {
+            if (!reviewedBy.has(reviewer) && !(rule?.pr_approval && reviewer == pull_request?.user?.login)) {
                 wholePassed = false;
                 passed = false;
-                requesting.push(reviewer);
+                if (reviewer != pull_request?.user?.login) {
+                    requesting.push(reviewer);
+                }
             }
         }
         if (!passed) {

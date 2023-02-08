@@ -33,7 +33,6 @@ async function run() {
     }
 
     // Pull and parse config file from EIPs repository (NOT PR HEAD)
-    
     const response = await octokit.rest.repos.getContent({
         owner: repository.owner.login,
         repo: repository.name,
@@ -57,43 +56,52 @@ async function run() {
     // Set the output
     let reviewedBy = new Set<string>();
 
+    // Add PR author as reviewer when applicable
+    result = result.map((rule: Rule): Rule => {
+        if (rule.pr_approval && rule.reviewers.includes(pull_request?.user?.login as string)) {
+            rule.min = rule.min - 1;
+        }
+        return rule;
+    });
+    reviewedBy.add(pull_request?.user?.login as string);
+
+    // Add proper reviewers as reviewers
     const reviews = await octokit.paginate(octokit.rest.pulls.listReviews, {
         owner: repository.owner.login,
         repo: repository.name,
         pull_number
     });
-
     for (let review of reviews) {
         if (review.state == 'APPROVED' && review.user?.login) {
+            reviewedBy.add(review.user?.login as string);
             result = result.map((rule: Rule): Rule => {
                 if (rule.reviewers.includes(review.user?.login as string)) {
                     rule.min = rule.min - 1;
                 }
                 return rule;
-            }).filter(rule => {
-                return rule.min > 0;
             });
-            reviewedBy.add(review.user?.login as string);
         }
     }
+    
+    // Remove all rules that were satisfied, and all active reviewers
+    result = result.filter(rule => {
+        return rule.min > 0;
+    }).map((rule: Rule): Rule => {
+        rule.reviewers = rule.reviewers.filter(reviewer => {
+            return !reviewedBy.has(reviewer);
+        });
+        return rule;
+    });
+    
+    // Generate success data
+    let wholePassed = result.length == 0;
 
-    let wholePassed = true;
+    // Generate comment
     let comment = '';
-    let filesToRules = {} as { [key: string]: { min: number, requesting: string[] }[] };
-    for (let rule of result) {
-        let passed = true;
-        let requesting = [];
-        for (let reviewer of rule.reviewers) {
-            if (!reviewedBy.has(reviewer) && !(rule?.pr_approval && reviewer == pull_request?.user?.login)) {
-                wholePassed = false;
-                passed = false;
-                if (reviewer != pull_request?.user?.login) {
-                    requesting.push(reviewer);
-                }
-            }
-        }
-        if (!passed) {
-            core.error(`Rule ${rule.name} requires ${rule.min} more reviewers: ${requesting.map(requesting => `@${requesting}`).join(", ")}`, rule.annotation);
+    if (!wholePassed) {
+        let filesToRules = {} as { [key: string]: { min: number, requesting: string[] }[] };
+        for (let rule of result) {
+            core.error(`Rule ${rule.name} requires ${rule.min} more reviewers: ${rule.reviewers.map(requesting => `@${requesting}`).join(", ")}`, rule.annotation);
             if (rule.annotation.file) {
                 let file = rule.annotation.file as string;
                 filesToRules[file] = filesToRules[file] || [];
@@ -102,27 +110,25 @@ async function run() {
                 core.setFailed('Rule annotation must contain a file');
             }
         }
-    }
-    
-    for (let file in filesToRules) {
-        comment = `${comment}\n\n### File \`${file}\`\n\n`;
-        let pastReviewers = [] as string[];
-        for (let rule of filesToRules[file]) {
-            for (let rule2 of filesToRules[file]) {
-                if (!pastReviewers.includes(rule.requesting.sort().join(',')) && rule.requesting.sort().join(',') === rule2.requesting.sort().join(',')) {
-                    pastReviewers.push(rule.requesting.sort().join(','));
-                    if (rule2.min > rule.min) {
-                        comment = `${comment}Requires ${rule2.min} more reviewers from ${rule.requesting.map(requesting => `@${requesting}`).join(", ")}\n`;
-                    } else {
-                        comment = `${comment}Requires ${rule.min} more reviewers from ${rule.requesting.map(requesting => `@${requesting}`).join(", ")}\n`;
+
+        for (let file in filesToRules) {
+            comment = `${comment}\n\n### File \`${file}\`\n\n`;
+            let pastReviewers = [] as string[];
+            for (let rule of filesToRules[file]) {
+                for (let rule2 of filesToRules[file]) {
+                    if (!pastReviewers.includes(rule.requesting.sort().join(',')) && rule.requesting.sort().join(',') === rule2.requesting.sort().join(',')) {
+                        pastReviewers.push(rule.requesting.sort().join(','));
+                        if (rule2.min > rule.min) {
+                            comment = `${comment}Requires ${rule2.min} more reviewers from ${rule.requesting.map(requesting => `@${requesting}`).join(", ")}\n`;
+                        } else {
+                            comment = `${comment}Requires ${rule.min} more reviewers from ${rule.requesting.map(requesting => `@${requesting}`).join(", ")}\n`;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
-    }
-    
-    if (comment == '') {
+    } else {
         comment = 'All reviewers have approved. Auto merging...';
     }
     

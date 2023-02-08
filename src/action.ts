@@ -31,11 +31,16 @@ async function run() {
     if (!pull_number) {  // If ran from a non pull_request event, fetch necessary data
         core.info("Detected non pull_request_target configuration. Fetching data.");
         pull_number = parseInt(core.getInput('pr_number'));
-        pull_request = await octokit.rest.pulls.get({
+        let pull_request_response = await octokit.rest.pulls.get({
             owner: repository.owner.login,
             repo: repository.name,
             pull_number
         });
+        if (pull_request_response.status !== 200) {
+            core.setFailed(`Could not fetch data for Pull Request ${repository.owner.login}/${repository.name}#${pull_number}`);
+            process.exit(4);
+        }
+        pull_request = pull_request_response.data;
     } else {
         core.info("Detected pull_request_target configuration. Using GitHub-provided data.");
     }

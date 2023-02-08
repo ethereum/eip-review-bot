@@ -24,12 +24,17 @@ const octokit = new ThrottledOctokit(getOctokitOptions(GITHUB_TOKEN, { throttle:
 
 async function run() {
     // Deconstruct the payload
-    const payload = github.context.payload as Partial<PullRequestEvent>;
-    const repository = payload.repository as Repository;
-    const pull_request = payload.pull_request as PullRequest;
+    const payload = github.context.payload as Partial<PullRequestEvent>;  // Partial since it might be ran from a non pull_request event
+    const repository = payload.repository as Repository;  // Guaranteed to be present no matter the event
+    let pull_request = payload.pull_request as PullRequest;
     let pull_number = pull_request?.number;
-    if (!pull_number) {
+    if (!pull_number) {  // If ran from a non pull_request event, fetch necessary data
         pull_number = parseInt(core.getInput('pr_number'));
+        pull_request = await octokit.rest.pulls.get({
+            owner: repository.owner.login,
+            repo: repository.name,
+            pull_number
+        });
     }
 
     // Pull and parse config file from EIPs repository (NOT PR HEAD)

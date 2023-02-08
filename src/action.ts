@@ -59,7 +59,10 @@ async function run() {
     // Add PR author as reviewer when applicable
     result = result.map((rule: Rule): Rule => {
         if (rule.pr_approval && rule.reviewers.includes(pull_request?.user?.login as string)) {
+            core.info(`PR Author "@${pull_request?.user?.login}" matched rule "${rule.name}" (PR Author Approval Enabled)`);
             rule.min = rule.min - 1;
+        } else {
+            core.info(`PR Author "@${pull_request?.user?.login}" did not matched rule "${rule.name}" (PR Author Approval Disabled)`);
         }
         return rule;
     });
@@ -76,7 +79,10 @@ async function run() {
             reviewedBy.add(review.user?.login as string);
             result = result.map((rule: Rule): Rule => {
                 if (rule.reviewers.includes(review.user?.login as string)) {
+                    core.info(`Review by "@${pull_request?.user?.login}" matched rule "${rule.name}"`);
                     rule.min = rule.min - 1;
+                } else {
+                    core.info(`Review by "@${pull_request?.user?.login}" did not match rule "${rule.name}"`)
                 }
                 return rule;
             });
@@ -85,10 +91,20 @@ async function run() {
     
     // Remove all rules that were satisfied, and all active reviewers
     result = result.filter(rule => {
-        return rule.min > 0;
+        if (rule.min <= 0) {
+            core.info(`Rule "${rule.name}" was satisfied`);
+            return false;
+        }
+        core.info(`Rule "${rule.name}" was not satisfied`)
+        return true;
     }).map((rule: Rule): Rule => {
         rule.reviewers = rule.reviewers.filter(reviewer => {
-            return !reviewedBy.has(reviewer);
+            if (!reviewedBy.has(reviewer)) {
+                core.info(`"@${reviewer}" was requested by rule "${rule.name}"`);
+                return true;
+            }
+            core.info(`"@${reviewer}" has already matched rule "${rule.name}"`);
+            return false;
         });
         return rule;
     });

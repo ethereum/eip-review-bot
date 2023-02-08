@@ -13,13 +13,13 @@ const ThrottledOctokit = GitHub.plugin(throttling);
 const GITHUB_TOKEN = core.getInput('token');
 const octokit = new ThrottledOctokit(getOctokitOptions(GITHUB_TOKEN, { throttle: {
     onRateLimit: (retryAfter: number, options: any) => {
-        octokit.log.warn(`Request quota exhausted for request ${options?.method || unknown} ${options?.url || unknown}`);
+        core.warn(`Request quota exhausted for request ${options?.method || unknown} ${options?.url || unknown}`);
         if (options?.request?.retryCount <= 2) {
-            console.log(`Retrying after ${retryAfter} seconds!`);
+            core.notice(`Retrying after ${retryAfter} seconds!`);
             return true;
         }
     },
-    onSecondaryRateLimit: (_retryAfter: number, options: any) => octokit.log.warn(`Abuse detected for request ${options?.method || unknown} ${options?.url || unknown}`),
+    onSecondaryRateLimit: (_retryAfter: number, options: any) => core.error(`Abuse detected for request ${options?.method || unknown} ${options?.url || unknown}`),
 } }));
 
 async function run() {
@@ -29,13 +29,17 @@ async function run() {
     let pull_request = payload.pull_request as PullRequest;
     let pull_number = pull_request?.number;
     if (!pull_number) {  // If ran from a non pull_request event, fetch necessary data
+        core.info("Detected non pull_request_target configuration. Fetching data.");
         pull_number = parseInt(core.getInput('pr_number'));
         pull_request = await octokit.rest.pulls.get({
             owner: repository.owner.login,
             repo: repository.name,
             pull_number
         });
+    } else {
+        core.info("Detected pull_request_target configuration. Using GitHub-provided data.");
     }
+    core.info(`Running eip-review-bot on ${repository.owner.login}/${repository.name}#${pull_number} by "@${pull_request?.user?.login}"`);
 
     // Pull and parse config file from EIPs repository (NOT PR HEAD)
     const response = await octokit.rest.repos.getContent({
@@ -67,7 +71,7 @@ async function run() {
             core.info(`PR Author "@${pull_request?.user?.login}" matched rule "${rule.name}" (PR Author Approval Enabled)`);
             rule.min = rule.min - 1;
         } else {
-            core.info(`PR Author "@${pull_request?.user?.login}" did not matched rule "${rule.name}" (PR Author Approval Disabled)`);
+            core.info(`PR Author "@${pull_request?.user?.login}" did not match rule "${rule.name}" (PR Author Approval Disabled)`);
         }
         return rule;
     });

@@ -10,10 +10,21 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
         let status = frontMatter.attributes?.status?.toLowerCase() as string;
         
         if (["living", "final", "withdrawn"].includes(status)) {
+            let authors = frontMatter.attributes.author?.match(/(?<=(?:^|,)[^<(]+\(@)(.*?)(?=\)(?:$|,))/g) || [];
+            let pr_approval = false;
+            let min = Math.floor(config.governance.length / 2);
+            for (let editor of config.governance) {
+                if (authors.includes(editor)) {
+                    pr_approval = true;
+                    min = 1;
+                    break;
+                }
+            }
             return [{
                 name: "terminal",
                 reviewers: config.governance,
-                min: Math.floor(config.governance.length / 2),
+                min,
+                pr_approval,
                 annotation: {
                     file: file.filename
                 }

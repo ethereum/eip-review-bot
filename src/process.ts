@@ -31,29 +31,43 @@ export default async function(octokit: Octokit, config: Config, files: File[]) {
         }
         
         // Get file contents
+        core.info(`Detected file ${file.filename}`);
+        
         if (["removed", "modified", "renamed"].includes(file.status)) {
-            const response = await octokit.rest.repos.getContent({
-                owner: pull_request.base.repo.owner.login,
-                repo: pull_request.base.repo.name,
-                path: file.previous_filename || file.filename,
-                ref: pull_request.base.ref
-            });
-            file.previous_contents = Buffer.from(response.data.content, "base64").toString("utf8");
-            if (!file.previous_contents) {
-                core.warning(`Could not get previous contents of ${file.filename}`, { file: file.filename });
+            core.info(`Detected file ${file.filename} already existing in repository (status = ${file.status})`);
+            try {
+                const response = await octokit.rest.repos.getContent({
+                    owner: pull_request.base.repo.owner.login,
+                    repo: pull_request.base.repo.name,
+                    path: file.previous_filename || file.filename,
+                    ref: pull_request.base.ref
+                });
+                file.previous_contents = Buffer.from(response.data.content, "base64").toString("utf8");
+                if (!file.previous_contents) {
+                    core.warning(`Could not get previous contents of ${file.filename}`, { file: file.filename });
+                }
+            } catch (e) {
+                core.setFailed(`An error occured when fetching previous contents of ${file.filename}`);
+                throw e;
             }
         }
 
         if (["modified", "renamed", "added", "copied"].includes(file.status)) {
-            const response = await octokit.rest.repos.getContent({
-                owner: pull_request.head.repo.owner.login,
-                repo: pull_request.head.repo.name,
-                path: file.filename,
-                ref: pull_request.head.ref
-            });
-            file.contents = Buffer.from(response.data.content, "base64").toString("utf8");
-            if (!file.contents) {
-                core.warning(`Could not get new contents of ${file.filename}`, { file: file.filename });
+            core.info(`Detected file ${file.filename} modified in PR (status = ${file.status})`);
+            try {
+                const response = await octokit.rest.repos.getContent({
+                    owner: pull_request.head.repo.owner.login,
+                    repo: pull_request.head.repo.name,
+                    path: file.filename,
+                    ref: pull_request.head.ref
+                });
+                file.contents = Buffer.from(response.data.content, "base64").toString("utf8");
+                if (!file.contents) {
+                    core.warning(`Could not get new contents of ${file.filename}`, { file: file.filename });
+                }
+            } catch (e) {
+                core.setFailed(`An error occured when fetching real contents of ${file.filename}`);
+                throw e;
             }
         }
 

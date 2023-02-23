@@ -103,6 +103,13 @@ async function run() {
         }
     }
     
+    // Make reviewers all lowercase
+    reviewedBy = reviewedBy.map(reviewer => reviewer.toLowerCase());
+    result = result.map(rule => {
+        rule.reviewers = rule.reviewers.map(reviewer => reviewer.toLowerCase());
+        return rule;
+    });
+    
     // Remove all rules that were satisfied, and all active reviewers
     result = result.filter(rule => {
         if (rule.min <= 0) {

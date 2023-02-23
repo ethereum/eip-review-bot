@@ -104,7 +104,7 @@ async function run() {
     }
     
     // Make reviewers all lowercase
-    reviewedBy = reviewedBy.map(reviewer => reviewer.toLowerCase());
+    reviewedBy = new Set(Array.from(reviewedBy).map(reviewer => reviewer.toLowerCase()));
     result = result.map(rule => {
         rule.reviewers = rule.reviewers.map(reviewer => reviewer.toLowerCase());
         return rule;

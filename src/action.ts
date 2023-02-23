@@ -70,6 +70,7 @@ async function run() {
         rule.reviewers = rule.reviewers.map(reviewer => reviewer.toLowerCase());
         return rule;
     });
+    core.info(`Raw result object: ${JSON.stringify(result, null, 2)}`);
 
     // Set the output
     let reviewedBy = new Set<string>();
@@ -96,7 +97,7 @@ async function run() {
         if (review.state == 'APPROVED' && review.user?.login) {
             reviewedBy.add(review.user?.login as string);
             result = result.map((rule: Rule): Rule => {
-                if (rule.reviewers.includes(review.user?.login as string)) {
+                if (rule.reviewers.includes(review.user?.login?.toLowerCase() as string)) {
                     core.info(`Review by "@${pull_request?.user?.login}" matched rule "${rule.name}"`);
                     rule.min = rule.min - 1;
                 } else {

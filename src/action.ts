@@ -66,13 +66,17 @@ async function run() {
     });
 
     let result: Rule[] = await processFiles(octokit, config, files);
+    result = result.map(rule => {
+        rule.reviewers = rule.reviewers.map(reviewer => reviewer.toLowerCase());
+        return rule;
+    });
 
     // Set the output
     let reviewedBy = new Set<string>();
 
     // Add PR author as reviewer when applicable
     result = result.map((rule: Rule): Rule => {
-        if (rule.pr_approval && rule.reviewers.includes(pull_request?.user?.login as string)) {
+        if (rule.pr_approval && rule.reviewers.includes(pull_request?.user?.login?.toLowerCase() as string)) {
             core.info(`PR Author "@${pull_request?.user?.login}" matched rule "${rule.name}" (PR Author Approval Enabled)`);
             rule.min = rule.min - 1;
         } else {
@@ -105,10 +109,6 @@ async function run() {
     
     // Make reviewers all lowercase
     reviewedBy = new Set(Array.from(reviewedBy).map(reviewer => reviewer.toLowerCase()));
-    result = result.map(rule => {
-        rule.reviewers = rule.reviewers.map(reviewer => reviewer.toLowerCase());
-        return rule;
-    });
     
     // Remove all rules that were satisfied, and all active reviewers
     result = result.filter(rule => {

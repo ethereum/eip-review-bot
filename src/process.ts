@@ -9,9 +9,10 @@ import checkNew from './rules/new.js';
 import checkStatus from './rules/statuschange.js';
 import checkStagnant from './rules/stagnant.js';
 import checkTerminalStatus from './rules/terminal.js';
+import checkEditorFile from './rules/editorFile.js';
 import checkOtherFiles from './rules/unknown.js';
 
-let rules = [ checkAssets, checkAuthors, checkNew, checkStatus, checkStagnant, checkTerminalStatus, checkOtherFiles ];
+let rules = [ checkAssets, checkAuthors, checkNew, checkStatus, checkStagnant, checkTerminalStatus, checkEditorFile, checkOtherFiles ];
 
 export default async function(octokit: Octokit, config: Config, files: File[]) {
     // Deconstruct

@@ -20,8 +20,10 @@ export default async function (_octokit: Octokit, _config: Config, files: File[]
                     pr_approval: true,
                     annotation: {
                         file: file.filename
-                    }
-                }];
+                    },
+                    labels: ["a-review"],
+                    exclude_labels: ["e-review"]
+                }] as Rule[];
             }
         }
 

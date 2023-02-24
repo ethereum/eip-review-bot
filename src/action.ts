@@ -13,7 +13,7 @@ const ThrottledOctokit = GitHub.plugin(throttling);
 const GITHUB_TOKEN = core.getInput('token');
 const octokit = new ThrottledOctokit(getOctokitOptions(GITHUB_TOKEN, { throttle: {
     onRateLimit: (retryAfter: number, options: any) => {
-        core.warn(`Request quota exhausted for request ${options?.method || unknown} ${options?.url || unknown}`);
+        core.warning(`Request quota exhausted for request ${options?.method || unknown} ${options?.url || unknown}`);
         if (options?.request?.retryCount <= 2) {
             core.notice(`Retrying after ${retryAfter} seconds!`);
             return true;
@@ -40,7 +40,7 @@ async function run() {
             core.setFailed(`Could not fetch data for Pull Request ${repository.owner.login}/${repository.name}#${pull_number}`);
             process.exit(4);
         }
-        pull_request = pull_request_response.data;
+        pull_request = pull_request_response.data as PullRequest;
     } else {
         core.info("Detected pull_request_target configuration. Using GitHub-provided data.");
     }
@@ -56,7 +56,8 @@ async function run() {
         core.setFailed(`Could not find file "${core.getInput('config') || 'eip-editors.yml'}"`);
         process.exit(3);
     }
-    const config = parse(Buffer.from(response.data.content, "base64").toString("utf8")) as { [key: string]: string[]; };
+    let response_data = response.data as { content: string; };
+    const config = parse(Buffer.from(response_data.content, "base64").toString("utf8")) as { [key: string]: string[]; };
 
     // Process files
     const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
@@ -112,12 +113,30 @@ async function run() {
     reviewedBy = new Set(Array.from(reviewedBy).map(reviewer => reviewer.toLowerCase()));
     
     // Remove all rules that were satisfied, and all active reviewers
+    let labels_to_add: Set<string> = new Set();
+    let labels_to_remove: Set<string> = new Set();
+    let labels_to_not_add: Set<string> = new Set();
     result = result.filter(rule => {
         if (rule.min <= 0) {
             core.info(`Rule "${rule.name}" was satisfied`);
+            if (rule.labels) {
+                for (let label of rule.labels) {
+                    labels_to_remove.add(label);
+                }
+            }
             return false;
         }
         core.info(`Rule "${rule.name}" was not satisfied`)
+        if (rule.labels) {
+            for (let label of rule.labels) {
+                labels_to_add.add(label);
+            }
+        }
+        if (rule.exclude_labels) {
+            for (let label of rule.exclude_labels) {
+                labels_to_not_add.add(label);
+            }
+        }
         return true;
     }).map((rule: Rule): Rule => {
         rule.reviewers = rule.reviewers.filter(reviewer => {
@@ -130,6 +149,10 @@ async function run() {
         });
         return rule;
     });
+
+    // Update label sets
+    labels_to_add = new Set(Array.from(labels_to_add).filter(label => !labels_to_not_add.has(label)));
+    labels_to_remove = new Set(Array.from(labels_to_remove).filter(label => !labels_to_add.has(label)));
     
     // Generate success data
     let wholePassed = result.length == 0;
@@ -191,6 +214,22 @@ async function run() {
             repo: repository.name,
             issue_number: pull_number,
             body: comment
+        });
+    }
+    
+    // Update labels
+    await octokit.rest.issues.addLabels({
+        owner: repository.owner.login,
+        repo: repository.name,
+        issue_number: pull_number,
+        labels: [...labels_to_add]
+    });
+    for (let label of labels_to_remove) {
+        await octokit.rest.issues.removeLabel({
+            owner: repository.owner.login,
+            repo: repository.name,
+            issue_number: pull_number,
+            name: label
         });
     }
 

@@ -169,6 +169,7 @@ async function run() {
     // Update label sets
     labels_to_add = new Set(Array.from(labels_to_add).filter(label => !labels_to_not_add.has(label)));
     labels_to_remove = new Set(Array.from(labels_to_remove).filter(label => !labels_to_add.has(label)));
+    labels_to_remove = new Set([...labels_to_remove, ...labels_to_not_add]);
     
     // Generate success data
     let wholePassed = result.length == 0;

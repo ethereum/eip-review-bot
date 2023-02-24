@@ -236,6 +236,8 @@ async function run() {
     // Special case: w-response label
     if (!wholePassed && labels_to_add.size == 0) {
         labels_to_add.add('w-response');
+    } else {
+        labels_to_remove.add('w-response');
     }
     
     // Update labels

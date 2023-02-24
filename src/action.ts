@@ -229,12 +229,14 @@ async function run() {
     labels_to_add = new Set(Array.from(labels_to_add).filter(label => !labels.includes(label)));
     labels_to_remove = new Set(Array.from(labels_to_remove).filter(label => labels.includes(label)));
     core.info(`Adding labels: ${Array.from(labels_to_add).join(", ")}`);
-    await octokit.rest.issues.addLabels({
-        owner: repository.owner.login,
-        repo: repository.name,
-        issue_number: pull_number,
-        labels: [...labels_to_add]
-    });
+    if (labels_to_add.size > 0) {
+        await octokit.rest.issues.addLabels({
+            owner: repository.owner.login,
+            repo: repository.name,
+            issue_number: pull_number,
+            labels: [...labels_to_add]
+        });
+    }
     core.info(`Removing labels: ${Array.from(labels_to_remove).join(", ")}`);
     for (let label of labels_to_remove) {
         core.info(`Removing label "${label}"`);

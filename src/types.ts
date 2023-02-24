@@ -55,8 +55,6 @@ export declare type Rule = {
      * The labels to not add the PR if the rule is not satisfied
      */
     exclude_labels?: string[] | undefined;
-
-    /** */
 };
 export declare type RuleProcessed = Rule & { label_min: number; };
 export declare type RuleGenerator = ((octokit: Octokit, config: Config, files: File[]) => Promise<Rule[]>);

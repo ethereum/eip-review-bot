@@ -5,7 +5,7 @@ import { throttling } from "@octokit/plugin-throttling";
 import { parse } from 'yaml';
 import { PullRequestEvent, Repository, PullRequest } from "@octokit/webhooks-types";
 import processFiles from './process.js';
-import { Rule } from './types.js';
+import { Rule, RuleProcessed } from './types.js';
 
 const unknown = "<unknown>";
 const ThrottledOctokit = GitHub.plugin(throttling);
@@ -66,27 +66,30 @@ async function run() {
         pull_number
     });
 
-    let result: Rule[] = await processFiles(octokit, config, files);
-    result = result.map(rule => {
+    let result = (await processFiles(octokit, config, files)).map((ruleog): RuleProcessed => {
+        let rule = ruleog as RuleProcessed;
         rule.reviewers = rule.reviewers.map(reviewer => reviewer.toLowerCase());
+        rule.min = Math.min(rule.min, rule.reviewers.length);
+        rule.label_min = rule.min;
         return rule;
     });
     core.info(`Raw result object: ${JSON.stringify(result, null, 2)}`);
 
     // Set the output
-    let reviewedBy = new Set<string>();
+    let approvedBy = new Set<string>();
 
     // Add PR author as reviewer when applicable
-    result = result.map((rule: Rule): Rule => {
+    result = result.map((rule: RuleProcessed): RuleProcessed => {
         if (rule.pr_approval && rule.reviewers.includes(pull_request?.user?.login?.toLowerCase() as string)) {
             core.info(`PR Author "@${pull_request?.user?.login}" matched rule "${rule.name}" (PR Author Approval Enabled)`);
             rule.min = rule.min - 1;
+            rule.label_min = rule.label_min - 1;
         } else {
             core.info(`PR Author "@${pull_request?.user?.login}" did not match rule "${rule.name}" (PR Author Approval Disabled)`);
         }
         return rule;
     });
-    reviewedBy.add(pull_request?.user?.login as string);
+    approvedBy.add(pull_request?.user?.login as string);
 
     // Add proper reviewers as reviewers
     const reviews = await octokit.paginate(octokit.rest.pulls.listReviews, {
@@ -95,14 +98,21 @@ async function run() {
         pull_number
     });
     for (let review of reviews) {
-        if (review.state == 'APPROVED' && review.user?.login) {
-            reviewedBy.add(review.user?.login as string);
-            result = result.map((rule: Rule): Rule => {
-                if (rule.reviewers.includes(review.user?.login?.toLowerCase() as string)) {
-                    core.info(`Review by "@${pull_request?.user?.login}" matched rule "${rule.name}"`);
-                    rule.min = rule.min - 1;
-                } else {
-                    core.info(`Review by "@${pull_request?.user?.login}" did not match rule "${rule.name}"`)
+        if (review.user?.login) {
+            if (review.state == 'APPROVED') {
+                approvedBy.add(review.user?.login as string);
+            }
+            result = result.map((rule: RuleProcessed): RuleProcessed => {
+                if (review.state == 'APPROVED') {
+                    if (rule.reviewers.includes(review.user?.login?.toLowerCase() as string)) {
+                        core.info(`Review by "@${pull_request?.user?.login}" matched rule "${rule.name}"`);
+                        rule.min = rule.min - 1;
+                    } else {
+                        core.info(`Review by "@${pull_request?.user?.login}" did not match rule "${rule.name}"`)
+                    }
+                }
+                if (rule.reviewers.includes(review.user?.login?.toLowerCase() as string) && ['APPROVE', 'REQUEST_CHANGES', 'COMMENT'].includes(review.state)) {
+                    rule.label_min = rule.label_min - 1;
                 }
                 return rule;
             });
@@ -110,40 +120,43 @@ async function run() {
     }
     
     // Make reviewers all lowercase
-    reviewedBy = new Set(Array.from(reviewedBy).map(reviewer => reviewer.toLowerCase()));
+    approvedBy = new Set(Array.from(approvedBy).map(reviewer => reviewer.toLowerCase()));
     
     // Remove all rules that were satisfied, and all active reviewers
     let labels_to_add: Set<string> = new Set();
     let labels_to_remove: Set<string> = new Set();
     let labels_to_not_add: Set<string> = new Set();
     result = result.filter(rule => {
-        if (rule.min <= 0) {
-            core.info(`Rule "${rule.name}" was satisfied`);
+        if (rule.label_min <= 0) {
             if (rule.labels) {
                 for (let label of rule.labels) {
                     core.info(`Label "${label}" was removed by rule "${rule.name}"`);
                     labels_to_remove.add(label);
                 }
             }
+            if (rule.exclude_labels) {
+                for (let label of rule.exclude_labels) {
+                    core.info(`Label "${label}" was excluded by rule "${rule.name}"`);
+                    labels_to_not_add.add(label);
+                }
+            }
+        } else {
+            if (rule.labels) {
+                for (let label of rule.labels) {
+                    core.info(`Label "${label}" was added by rule "${rule.name}"`);
+                    labels_to_add.add(label);
+                }
+            }
+        }
+        if (rule.min <= 0) {
+            core.info(`Rule "${rule.name}" was satisfied`);
             return false;
         }
         core.info(`Rule "${rule.name}" was not satisfied`)
-        if (rule.labels) {
-            for (let label of rule.labels) {
-                core.info(`Label "${label}" was added by rule "${rule.name}"`);
-                labels_to_add.add(label);
-            }
-        }
-        if (rule.exclude_labels) {
-            for (let label of rule.exclude_labels) {
-                core.info(`Label "${label}" was excluded by rule "${rule.name}"`);
-                labels_to_not_add.add(label);
-            }
-        }
         return true;
-    }).map((rule: Rule): Rule => {
+    }).map((rule: RuleProcessed): RuleProcessed => {
         rule.reviewers = rule.reviewers.filter(reviewer => {
-            if (!reviewedBy.has(reviewer)) {
+            if (!approvedBy.has(reviewer)) {
                 core.info(`"@${reviewer}" was requested by rule "${rule.name}"`);
                 return true;
             }

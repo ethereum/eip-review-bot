@@ -56,6 +56,7 @@ export declare type Rule = {
      */
     exclude_labels?: string[] | undefined;
 };
+export declare type RuleProcessed = Rule & { label_min: number; };
 export declare type RuleGenerator = ((octokit: Octokit, config: Config, files: File[]) => Promise<Rule[]>);
 export declare type Config = { [key: string]: string[] };
 export declare type FrontMatter = { [key: string]: string | undefined };

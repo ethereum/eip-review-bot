@@ -20,7 +20,42 @@ export declare type Octokit = import("@octokit/core/dist-types").Octokit & impor
     paginate: import("@octokit/plugin-paginate-rest").PaginateInterface;
 };
 
+export declare type Rule = {
+    /**
+     * The name of the rule
+     */ 
+    name: string;  
+
+    /**
+     * The list of GitHub usernames (case insensitive) that are needed to satisfy the rule
+     */
+    reviewers: string[];
+
+    /**
+     * The minumum number of reviewers needed to satisfy the rule
+     */
+    min: number;
+
+    /**
+     * The annotation to be displayed on the PR if the rule is not satisfied
+     */
+    annotation: core.AnnotationProperties;
+
+    /**
+     * Whether the PR author approves the PR by default
+     */
+    pr_approval?: boolean | undefined;
+
+    /**
+     * The labels to add to the PR if the rule is not satisfied, or remove if the rule is satisfied
+     */
+    labels?: string[] | undefined;
+
+    /**
+     * The labels to not add the PR if the rule is not satisfied
+     */
+    exclude_labels?: string[] | undefined;
+};
+export declare type RuleGenerator = ((octokit: Octokit, config: Config, files: File[]) => Promise<Rule[]>);
 export declare type Config = { [key: string]: string[] };
 export declare type FrontMatter = { [key: string]: string | undefined };
-export declare type Rule = { name: string; reviewers: string[]; min: number; annotation: core.AnnotationProperties; pr_approval?: boolean | undefined; };
-export declare type RuleGenerator = ((octokit: Octokit, config: Config, files: File[]) => Promise<Rule[]>);

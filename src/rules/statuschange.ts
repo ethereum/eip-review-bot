@@ -19,8 +19,9 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
                 min: 1,
                 annotation: {
                     file: file.filename
-                }
-            }]; // Fallback: require editor approval if there's missing statuses
+                },
+                labels: ["e-consensus"]
+            }] as Rule[]; // Fallback: require editor approval if there's missing statuses
         }
         
         let statusOld = frontMatter.attributes?.status?.toLowerCase() as string;
@@ -37,8 +38,9 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
                 min: 1,
                 annotation: {
                     file: file.filename
-                }
-            }];
+                },
+                labels: ["e-review"]
+            }] as Rule[];
         }
 
         return [];

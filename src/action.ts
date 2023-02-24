@@ -111,7 +111,7 @@ async function run() {
                         core.info(`Review by "@${pull_request?.user?.login}" did not match rule "${rule.name}"`)
                     }
                 }
-                if (rule.reviewers.includes(review.user?.login?.toLowerCase() as string) && ['APPROVE', 'REQUEST_CHANGES', 'COMMENT'].includes(review.state)) {
+                if (rule.reviewers.includes(review.user?.login?.toLowerCase() as string) && ['APPROVE', 'REQUEST_CHANGES', 'COMMENT'].includes(review.state) && review.commit_id == pull_request.head.sha) {
                     rule.label_min = rule.label_min - 1;
                 }
                 return rule;

@@ -8,6 +8,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
             name: "editors",
             reviewers: config.governance,
             min: Math.max(config.governance.length - 1, Math.min(config.governance.length, 2)),
+            pr_approval: true,
             annotation: {
                 file: file.filename
             },

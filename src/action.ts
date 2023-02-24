@@ -232,6 +232,11 @@ async function run() {
             body: comment
         });
     }
+
+    // Special case: w-response label
+    if (!wholePassed && labels_to_add.size == 0) {
+        labels_to_add.add('w-response');
+    }
     
     // Update labels
     let labels = (await octokit.rest.issues.listLabelsOnIssue({

@@ -121,6 +121,7 @@ async function run() {
             core.info(`Rule "${rule.name}" was satisfied`);
             if (rule.labels) {
                 for (let label of rule.labels) {
+                    core.info(`Label "${label}" was removed by rule "${rule.name}"`);
                     labels_to_remove.add(label);
                 }
             }
@@ -129,11 +130,13 @@ async function run() {
         core.info(`Rule "${rule.name}" was not satisfied`)
         if (rule.labels) {
             for (let label of rule.labels) {
+                core.info(`Label "${label}" was added by rule "${rule.name}"`);
                 labels_to_add.add(label);
             }
         }
         if (rule.exclude_labels) {
             for (let label of rule.exclude_labels) {
+                core.info(`Label "${label}" was excluded by rule "${rule.name}"`);
                 labels_to_not_add.add(label);
             }
         }
@@ -218,13 +221,23 @@ async function run() {
     }
     
     // Update labels
+    let labels = (await octokit.rest.issues.listLabelsOnIssue({
+        owner: repository.owner.login,
+        repo: repository.name,
+        issue_number: pull_number
+    })).data.map(label => label.name);
+    labels_to_add = new Set(Array.from(labels_to_add).filter(label => !labels.includes(label)));
+    labels_to_remove = new Set(Array.from(labels_to_remove).filter(label => labels.includes(label)));
+    core.info(`Adding labels: ${Array.from(labels_to_add).join(", ")}`);
     await octokit.rest.issues.addLabels({
         owner: repository.owner.login,
         repo: repository.name,
         issue_number: pull_number,
         labels: [...labels_to_add]
     });
+    core.info(`Removing labels: ${Array.from(labels_to_remove).join(", ")}`);
     for (let label of labels_to_remove) {
+        core.info(`Removing label "${label}"`);
         await octokit.rest.issues.removeLabel({
             owner: repository.owner.login,
             repo: repository.name,

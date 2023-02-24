@@ -134,17 +134,17 @@ async function run() {
                     labels_to_remove.add(label);
                 }
             }
-            if (rule.exclude_labels) {
-                for (let label of rule.exclude_labels) {
-                    core.info(`Label "${label}" was excluded by rule "${rule.name}"`);
-                    labels_to_not_add.add(label);
-                }
-            }
         } else {
             if (rule.labels) {
                 for (let label of rule.labels) {
                     core.info(`Label "${label}" was added by rule "${rule.name}"`);
                     labels_to_add.add(label);
+                }
+            }
+            if (rule.exclude_labels) {
+                for (let label of rule.exclude_labels) {
+                    core.info(`Label "${label}" was excluded by rule "${rule.name}"`);
+                    labels_to_not_add.add(label);
                 }
             }
         }

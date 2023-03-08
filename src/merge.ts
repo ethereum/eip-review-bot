@@ -15,7 +15,13 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository) {
     // Get all EIP numbers
     const eipNumbers = eips
         .filter(eip => eip.name.startsWith('eip-'))
-        .map(eip => Number(eip.name.split('-')[1]));
+        .map(eip => {
+            try {
+                return Number(eip.name.split('-')[1]);
+            } catch {
+                return 0;
+            }
+        });
 
     // Find the biggest EIP number
     const eipNumber = Math.max(...eipNumbers);

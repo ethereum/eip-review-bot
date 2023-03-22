@@ -7,7 +7,7 @@ let ignoreStatuses = ["withdrawn", "stagnant", "final", "living"];
 export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results
     let res : Rule[][] = await Promise.all(files.map(async file => {
-        if (!file.filename.endsWith(".md")) return [];
+        if (!file.filename.endsWith(".md") || !file.filename.startsWith("EIPS/")) return [];
 
         let frontMatter = fm<FrontMatter>(file.previous_contents as string);
         let frontMatterNew = fm<FrontMatter>(file.contents as string);

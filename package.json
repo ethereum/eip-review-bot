@@ -28,7 +28,7 @@
     "@octokit/rest": "^19.0.7",
     "@octokit/webhooks-types": "^6.10.0",
     "@types/jest": "^29.5.0",
-    "@types/node": "^18.15.2",
+    "@types/node": "^18.15.5",
     "before-after-hook": "^3.0.2",
     "bottleneck": "^2.19.5",
     "encoding": "^0.1.13",
@@ -41,7 +41,7 @@
     "tr46": "^4.1.1",
     "ts-jest": "^29.0.5",
     "tunnel": "^0.0.6",
-    "typescript": "^4.9.5",
+    "typescript": "^5.0.2",
     "wrappy": "^1.0.2",
     "yaml": "^2.2.1"
   }

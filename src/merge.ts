@@ -176,7 +176,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
         pullRequestNumber: pull_number
     }) as any;
     await octokit.graphql(`
-        mutation {
+        mutation EnableAutoMerge($pullRequestId: ID!, $commitHeadline: String!, $authorEmail: String!) {
             enablePullRequestAutoMerge(input: {
                 pullRequestId: $pullRequestId,
                 commitHeadline: $commitHeadline,

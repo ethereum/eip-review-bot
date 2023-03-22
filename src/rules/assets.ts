@@ -8,8 +8,8 @@ export default async function (octokit: Octokit, config: Config, files: File[] )
 
         return processFiles(octokit, config, [{
             filename: `EIPS/${file.filename.split("/")[1]}.md`,
-            status: 'modified'
-        }]);
+            status: 'modified',
+        }], false);
     }));
 
     // Merge results

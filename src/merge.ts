@@ -51,7 +51,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             const frontmatter = fileData.attributes as FrontMatter;
 
             // Check if EIP number needs setting
-            if (!frontmatter.eip) {
+            if (!frontmatter.eip && frontmatter.status != "Draft") {
                 let eip = await generateEIPNumber(octokit, repository);
 
                 frontmatter.eip = `${eip}`;

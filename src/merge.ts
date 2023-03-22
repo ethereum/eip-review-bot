@@ -154,7 +154,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     // Enable auto merge
     // Need to use GraphQL API to enable auto merge
     // https://docs.github.com/en/graphql/reference/mutations#enablepullrequestautomerge
-    const response = await octokit.graphql(`
+    /*const response = await octokit.graphql(`
         query GetPullRequestId($owner: String!, $repo: String!, $pullRequestNumber: Int!) {
             repository(owner: $owner, name: $repo) {
                 pullRequest(number: $pullRequestNumber) {
@@ -191,5 +191,5 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
         pull_number: pull_number,
         event: "APPROVE",
         body: "All reviewers have approved; Merging..."
-    });
+    });*/
 }

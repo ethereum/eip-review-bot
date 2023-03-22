@@ -32,12 +32,12 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
 
     // If the PR modifies the EIP template, use Update Template
     if (files.some(file => file.filename === "eip-template.md")) {
-        return localConfig.title.updateEipPrefix.replace("XXXX", "Template") + title;
+        return localConfig.title.updateEipPrefix.replace("EIP-XXXX", "Template") + title;
     }
 
     // If the PR modifies the EIP README, use Update README
     if (files.some(file => file.filename === "README.md")) {
-        return localConfig.title.updateEipPrefix.replace("XXXX", "README") + title;
+        return localConfig.title.updateEipPrefix.replace("EIP-XXXX", "README") + title;
     }
 
     // If the PR adds a new EIP, use Add EIP prefix

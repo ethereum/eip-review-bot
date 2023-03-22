@@ -19,6 +19,11 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     if (files.some(file => file.filename.startsWith("config/"))) {
         return localConfig.title.configPrefix + title;
     }
+    
+    // If the PR changes a file in the .github directory, use CI prefix
+    if (files.some(file => file.filename.startsWith("config/"))) {
+        return localConfig.title.ciPrefix + title;
+    }
 
     // If the PR modifies the website, use Website prefix
     if (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".vue") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-")))) {

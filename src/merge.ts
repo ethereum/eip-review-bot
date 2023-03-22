@@ -138,11 +138,11 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             // Check if last call deadline needs setting
             if (frontmatter.status == "Last Call" && !frontmatter["last-call-deadline"]) {
                 let fourteenDays = new Date(Date.now() + 12096e5);
-                frontmatter["last-call-deadline"] = `${fourteenDays.getUTCFullYear()}-${fourteenDays.getUTCMonth()}-${fourteenDays.getUTCDate()}`;
+                frontmatter["last-call-deadline"] = new Date(`${fourteenDays.getUTCFullYear()}-${fourteenDays.getUTCMonth()}-${fourteenDays.getUTCDate()}`);
             }
 
             // Now, regenerate markdown from front matter
-            file.contents = `---\n${yaml.dump(frontmatter).trim()}\n---\n\n${fileData.body}`;
+            file.contents = `---\n${yaml.dump(frontmatter).trim().replaceAll('T00:00:00.000Z', '')}\n---\n\n${fileData.body}`;
             
             // Push
             newFiles.push(file);

@@ -15,14 +15,14 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
         title = title.split(":").slice(1).join(":").trim();
     }
 
-    // If the PR changes a file in the config directory, use Config prefix
-    if (files.some(file => file.filename.startsWith("config/"))) {
-        return localConfig.title.configPrefix + title;
-    }
-    
-    // If the PR changes a file in the .github directory, use CI prefix
-    if (files.some(file => file.filename.startsWith("config/"))) {
+    // If the PR changes a file in the .github/workflows directory, use CI prefix
+    if (files.some(file => file.filename.startsWith(".github/workflows"))) {
         return localConfig.title.ciPrefix + title;
+    }
+
+    // If the PR changes a file in the config or .github directory, use Config prefix
+    if (files.some(file => file.filename.startsWith("config/")) || files.some(file => file.filename.startsWith(".github"))) {
+        return localConfig.title.configPrefix + title;
     }
 
     // If the PR modifies the website, use Website prefix

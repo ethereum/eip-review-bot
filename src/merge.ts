@@ -76,14 +76,13 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         recursive: "true", // Why does this have to be a *string*?
     });
     const oldPaths = oldFiles.map(file => file.filename);
-    const oldTreePaths = oldTree.tree.map((file: any) => file.path);
-    for (let oldTreePath of oldTreePaths) {
-        if (!oldPaths.includes(oldTreePath)) {
+    for (let oldTreeFile of oldTree.tree) {
+        if (!oldPaths.includes(oldTreeFile.path as string)) {
             tree.push({
-                path: oldTreePath,
+                path: oldTreeFile.path,
                 mode: `100644`,
                 type: `blob`,
-                sha: null,
+                sha: oldTreeFile.sha,
             });
         }
     }

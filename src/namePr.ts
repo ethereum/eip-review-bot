@@ -13,7 +13,7 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     
     if (title.match(":")) {
         title = title.split(":").slice(1).join(":").trim();
-    };
+    }
 
     // If the PR changes a file in the config directory, use Config prefix
     if (files.some(file => file.filename.startsWith("config/"))) {

@@ -1,8 +1,9 @@
-import type { Config, Octokit, File, FrontMatter } from './types';
+import { Config, File, Octokit, FrontMatter } from './types';
 import type { Repository } from '@octokit/webhooks-types';
 import localConfig from './localConfig';
 import fm from 'front-matter';
 import yaml from 'js-yaml';
+import { PullRequest } from '@octokit/webhooks-types';
 
 async function generateEIPNumber(octokit: Octokit, repository: Repository) {
     // Get all EIPs
@@ -29,6 +30,82 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository) {
     // Add a random number from 1-5 to the EIP number
     // This is to prevent conflicts when multiple PRs are merged at the same time, and to prevent number gaming
     return eipNumber + Math.floor(Math.random() * 3) + 1;
+}
+
+async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
+    let owner = pull_request.head.repo?.owner?.login as string;
+    let repo = pull_request.head.repo?.name as string;
+    let ref = pull_request.head.ref as string;
+    const { data: refData } = await octokit.rest.git.getRef({
+        owner,
+        repo,
+        ref,
+    });
+    const commitSha = refData.object.sha;
+    const { data: commitData } = await octokit.rest.git.getCommit({
+        owner,
+        repo,
+        commit_sha: commitSha,
+    });
+    const currentCommit = {
+        commitSha,
+        treeSha: commitData.tree.sha,
+    };
+    let blobs = [];
+    for (let i = 0; i < newFiles.length; i++) {
+        const content = newFiles[i].contents as string;
+        const blobData = await octokit.rest.git.createBlob({
+            owner: pull_request.head.repo?.owner?.login as string,
+            repo: pull_request.head.repo?.name as string,
+            content,
+            encoding: 'utf-8',
+        });
+        blobs.push(blobData.data);
+    }
+    const paths = newFiles.map(file => file.filename);
+    const tree = blobs.map(({ sha }, index) => ({
+        path: paths[index],
+        mode: `100644`,
+        type: `blob`,
+        sha,
+    })) as any[];
+    const { data: oldTree } = await octokit.rest.git.getTree({
+        owner,
+        repo,
+        tree_sha: currentCommit.treeSha,
+        recursive: "true", // Why does this have to be a *string*?
+    });
+    const oldPaths = oldFiles.map(file => file.filename);
+    const oldTreePaths = oldTree.tree.map((file: any) => file.path);
+    for (let oldTreePath of oldTreePaths) {
+        if (!oldPaths.includes(oldTreePath)) {
+            tree.push({
+                path: oldTreePath,
+                mode: `100644`,
+                type: `blob`,
+                sha: null,
+            });
+        }
+    }
+    const { data: newTree } = await octokit.rest.git.createTree({
+        owner,
+        repo,
+        tree,
+    });
+    const message = `Commit from EIP-Bot`;
+    const newCommit = (await octokit.rest.git.createCommit({
+        owner,
+        repo,
+        message,
+        tree: newTree.sha,
+        parents: [currentCommit.commitSha],
+    })).data;
+    await octokit.rest.git.updateRef({
+        owner,
+        repo,
+        ref,
+        sha: newCommit.sha,
+    });
 }
 
 export async function performMergeAction(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[]) {
@@ -78,38 +155,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     }
 
     // Push changes
-    for (let i = 0; i < files.length; i++) {
-        let oldFile = files[i];
-        let newFile = newFiles[i];
-
-        if (oldFile.status == "removed") {
-            continue;
-        }
-        // Delete old
-        await octokit.rest.repos.deleteFile({
-            owner: pull_request.head.repo?.owner?.login as string,
-            repo: pull_request.head.repo?.name as string,
-            path: oldFile.filename,
-            sha: oldFile.sha,
-            message: `Update ${newFile.filename} (Part 1)`,
-            committer: {
-                name: "eth-bot",
-                email: localConfig.commitEmail
-            },
-        });
-        // Create new
-        await octokit.rest.repos.createOrUpdateFileContents({
-            owner: pull_request.head.repo?.owner?.login as string,
-            repo: pull_request.head.repo?.name as string,
-            path: newFile.filename,
-            message: `Update ${newFile.filename} (Part 2)`,
-            committer: {
-                name: "eth-bot",
-                email: localConfig.commitEmail
-            },
-            content: Buffer.from(newFile.contents as string).toString('base64') as string
-        });
-    }
+    await updateFiles(octokit, pull_request, files, newFiles);
 
     // Enable auto merge
     // Need to use GraphQL API to enable auto merge

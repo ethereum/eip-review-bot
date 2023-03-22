@@ -1,8 +1,9 @@
-import type { Config, Octokit, File, FrontMatter } from './types';
+import { Config, File, Octokit, FrontMatter } from './types';
 import type { Repository } from '@octokit/webhooks-types';
 import localConfig from './localConfig';
 import fm from 'front-matter';
 import yaml from 'js-yaml';
+import { PullRequest } from '@octokit/webhooks-types';
 
 async function generateEIPNumber(octokit: Octokit, repository: Repository) {
     // Get all EIPs
@@ -31,17 +32,17 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository) {
     return eipNumber + Math.floor(Math.random() * 3) + 1;
 }
 
-async function updateFiles(octokit: Octokit, pull_request, oldFiles: File[], newFiles: File[]) {
+async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
     let owner = pull_request.head.repo?.owner?.login as string;
     let repo = pull_request.head.repo?.name as string;
     let ref = pull_request.head.ref as string;
-    const { data: refData } = await octokit.git.getRef({
+    const { data: refData } = await octokit.rest.git.getRef({
         owner,
         repo,
         ref,
     });
     const commitSha = refData.object.sha;
-    const { data: commitData } = await octokit.git.getCommit({
+    const { data: commitData } = await octokit.rest.git.getCommit({
         owner,
         repo,
         commit_sha: commitSha,
@@ -52,8 +53,8 @@ async function updateFiles(octokit: Octokit, pull_request, oldFiles: File[], new
     };
     let blobs = [];
     for (let i = 0; i < newFiles.length; i++) {
-        const content = newFiles[i].content;
-        const blobData = await octokit.git.createBlob({
+        const content = newFiles[i].contents as string;
+        const blobData = await octokit.rest.git.createBlob({
             owner: pull_request.head.repo?.owner?.login as string,
             repo: pull_request.head.repo?.name as string,
             content,
@@ -67,22 +68,39 @@ async function updateFiles(octokit: Octokit, pull_request, oldFiles: File[], new
         mode: `100644`,
         type: `blob`,
         sha,
-    })) as Octokit.GitCreateTreeParamsTree[];
-    const { data: newTree } = await octokit.git.createTree({
+    })) as any[];
+    const { data: oldTree } = await octokit.rest.git.getTree({
+        owner,
+        repo,
+        tree_sha: currentCommit.treeSha,
+        recursive: "true", // Why does this have to be a *string*?
+    });
+    const oldPaths = oldFiles.map(file => file.filename);
+    const oldTreePaths = oldTree.tree.map((file: any) => file.path);
+    for (let oldTreePath of oldTreePaths) {
+        if (!oldPaths.includes(oldTreePath)) {
+            tree.push({
+                path: oldTreePath,
+                mode: `100644`,
+                type: `blob`,
+                sha: null,
+            });
+        }
+    }
+    const { data: newTree } = await octokit.rest.git.createTree({
         owner,
         repo,
         tree,
-        base_tree: currentCommit.treeSha,
     });
-    const message = `My commit message`
-    const newCommit = (await octokit.git.createCommit({
+    const message = `Commit from EIP-Bot`;
+    const newCommit = (await octokit.rest.git.createCommit({
         owner,
         repo,
         message,
         tree: newTree.sha,
         parents: [currentCommit.commitSha],
     })).data;
-    await octo.git.updateRef({
+    await octokit.rest.git.updateRef({
         owner,
         repo,
         ref,

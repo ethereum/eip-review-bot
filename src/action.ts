@@ -48,7 +48,7 @@ async function run() {
     core.info(`Running eip-review-bot on ${repository.owner.login}/${repository.name}#${pull_number} by "@${pull_request?.user?.login}"`);
 
     // If PR doesn't have "allow edits from maintainers" enabled, error
-    if (!pull_request?.maintainer_can_modify) {
+    if (!pull_request?.maintainer_can_modify && repository.owner.login != pull_request.base.repo.owner.login) {
         let body = "❌ PR does not have \"Allow edits from maintainers\" enabled. This is required for the EIP Review Bot to function. Please enable it."
         let me = await octokit.rest.users.getAuthenticated();
         let comments = await octokit.rest.issues.listComments({

@@ -141,10 +141,10 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             }
             
             if (frontmatter.created) {
-                let then = frontmatter.created;
+                let then = new Date(frontmatter.created);
                 frontmatter.created = `${then.getUTCFullYear()}-${then.getUTCMonth()}-${then.getUTCDate()}`;
             } else {
-                let now = Date.now();
+                let now = new Date(Date.now());
                 frontmatter.created = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
             }
 
@@ -162,18 +162,35 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     // Enable auto merge
     // Need to use GraphQL API to enable auto merge
     // https://docs.github.com/en/graphql/reference/mutations#enablepullrequestautomerge
+    const response = await octokit.graphql(`
+        query GetPullRequestId($owner: String!, $repo: String!, $pullRequestNumber: Int!) {
+            repository(owner: $owner, name: $repo) {
+                pullRequest(number: $pullRequestNumber) {
+                    id
+                }
+            }
+        }
+    `, {
+        owner: repository.owner.login,
+        repo: repository.name,
+        pullRequestNumber: pull_number
+    }) as any;
     await octokit.graphql(`
         mutation {
             enablePullRequestAutoMerge(input: {
-                pullRequestId: "${Buffer.from(repository.full_name + ':' + pull_number).toString('base64')}",
-                commitHeadline: "${title}",
-                authorEmail: "${localConfig.commitEmail}"
+                pullRequestId: $pullRequestId,
+                commitHeadline: $commitHeadline,
+                authorEmail: $authorEmail,
                 clientMutationId: "enable-auto-merge"
             }) {
                 clientMutationId
             }
         }
-    `);
+    `, {
+        pullRequestId: response.repository.pullRequest.id,
+        commitHeadline: title,
+        authorEmail: localConfig.commitEmail
+    });
 
     // Approve PR
     await octokit.rest.pulls.createReview({

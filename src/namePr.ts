@@ -1,14 +1,19 @@
 import type { Octokit, Config, File } from "./types";
 import type { Repository } from "@octokit/webhooks-types";
 import localConfig from "./localConfig";
+import fm from "front-matter";
 
 export async function generatePRTitle(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[]) {
     // Get PR title, ignoring the prefix before the first colon
-    const title = (await octokit.rest.pulls.get({
+    let title = (await octokit.rest.pulls.get({
         owner: repository.owner.login,
         repo: repository.name,
         pull_number: pull_number
-    })).data.title.split(":").slice(1).join(":").trim();
+    })).data.title;
+    
+    if (title.match(":")) {
+        title = title.split(":").slice(1).join(":").trim();
+    };
 
     // If the PR changes a file in the config directory, use Config prefix
     if (files.some(file => file.filename.startsWith("config/"))) {
@@ -32,7 +37,9 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
 
     // If the PR adds a new EIP, use Add EIP prefix
     if (files.some(file => file.filename.startsWith("EIPS/eip-") && file.status === "added")) {
-        return localConfig.title.addEipPrefix + title;
+        let theFile = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "added");
+        let frontMatter = fm<FrontMatter>(file.contents as string);
+        return localConfig.title.addEipPrefix + frontMatter.attributes?.title;
     }
 
     // If the PR updates an existing EIP's status, use Update EIP prefix and custom title

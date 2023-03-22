@@ -50,7 +50,7 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     // If the PR updates an existing EIP's status, use Update EIP prefix and custom title
     if (files.some(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))) {
         let eipNumber = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
-        let newStatus = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))?.patch?.split(":")[1].trim() as string;
+        let newStatus = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))?.patch?.match(/(?<=\+status:\W?)\w[^\r\n]*/g)[0] as string;
         return localConfig.title.updateEipPrefix.replace("XXXX", eipNumber) + `Move to ${newStatus}`;
     }
 

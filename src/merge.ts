@@ -77,13 +77,8 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     });
     const oldPaths = oldFiles.map(file => file.filename);
     for (let oldTreeFile of oldTree.tree) {
-        if (!oldPaths.includes(oldTreeFile.path as string)) {
-            tree.push({
-                path: oldTreeFile.path,
-                mode: `100644`,
-                type: `blob`,
-                sha: oldTreeFile.sha,
-            });
+        if (oldTreeFile.type != "tree" && !oldPaths.includes(oldTreeFile.path as string)) {
+            tree.push(oldTreeFile);
         }
     }
     const { data: newTree } = await octokit.rest.git.createTree({

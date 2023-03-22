@@ -12,6 +12,8 @@ import checkTerminalStatus from './rules/terminal.js';
 import checkEditorFile from './rules/editorFile.js';
 import checkOtherFiles from './rules/unknown.js';
 
+import { generatePRTitle } from './namePr.js';
+
 let rules = [ checkAssets, checkAuthors, checkNew, checkStatus, checkStagnant, checkTerminalStatus, checkEditorFile, checkOtherFiles ];
 
 export default async function(octokit: Octokit, config: Config, files: File[]) {
@@ -91,6 +93,17 @@ export default async function(octokit: Octokit, config: Config, files: File[]) {
 
         return file;
     }));
+    
+    // Rename PR
+    let newPRTitle = await generatePRTitle(octokit, config, repository, pull_number, files);
+    if (newPRTitle && newPRTitle != pull_request?.title) {
+        await octokit.rest.pulls.update({
+            owner: repository.owner.login,
+            repo: repository.name,
+            pull_number,
+            title: newPRTitle
+        });
+    }
 
     // Get results
     let res : Rule[][] = await Promise.all(rules.map(rule => rule(octokit, config, files2)));

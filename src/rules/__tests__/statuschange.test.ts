@@ -4,6 +4,9 @@ import checkStatus from "../statuschange";
 let fakeOctokit = null as unknown as Octokit; // Ew, but it works
 
 describe("checkStatus", () => {
+    test("Should not trigger on non-EIP file", () => {
+            expect(checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [{ filename: "eip-1.md", status: "modified", previous_contents: "---\nstatus: Draft\ncategory: ERC\n---\nHello!", contents: "---\nstatus: Review\ncategory: ERC\n---\nHello!" }])).resolves.toMatchObject([]);
+    });
     test("Should require one reviewer on EIP file with downgraded status", () => {
         expect(checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [{ filename: "EIPS/eip-1.md", status: "modified", previous_contents: "---\nstatus: Draft\ncategory: ERC\n---\nHello!", contents: "---\nstatus: Review\ncategory: ERC\n---\nHello!" }])).resolves.toMatchObject([{
             name: "statuschange",

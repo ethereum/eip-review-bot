@@ -92,7 +92,6 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
                 owner: pull_request.head.repo?.owner?.login as string,
                 repo: pull_request.head.repo?.name as string,
                 path: newFile.filename,
-                sha: oldFile.sha as string,
                 message: `Delete ${oldFile.filename}`,
                 committer: {
                     name: "eth-bot",
@@ -104,7 +103,6 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             owner: pull_request.head.repo?.owner?.login as string,
             repo: pull_request.head.repo?.name as string,
             path: newFile.filename,
-            sha: oldFile.sha as string,
             message: `Update ${newFile.filename}`,
             committer: {
                 name: "eth-bot",

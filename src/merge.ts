@@ -85,25 +85,24 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
         if (oldFile.status == "removed") {
             continue;
         }
-
-        if (oldFile.filename !== newFile.filename) {
-            // Delete old
-            await octokit.rest.repos.deleteFile({
-                owner: pull_request.head.repo?.owner?.login as string,
-                repo: pull_request.head.repo?.name as string,
-                path: newFile.filename,
-                message: `Delete ${oldFile.filename}`,
-                committer: {
-                    name: "eth-bot",
-                    email: localConfig.commitEmail
-                },
-            });
-        }
+        // Delete old
+        await octokit.rest.repos.deleteFile({
+            owner: pull_request.head.repo?.owner?.login as string,
+            repo: pull_request.head.repo?.name as string,
+            path: oldFile.filename,
+            sha: oldFile.sha,
+            message: `Update ${newFile.filename} (Part 1)`,
+            committer: {
+                name: "eth-bot",
+                email: localConfig.commitEmail
+            },
+        });
+        // Create new
         await octokit.rest.repos.createOrUpdateFileContents({
             owner: pull_request.head.repo?.owner?.login as string,
             repo: pull_request.head.repo?.name as string,
             path: newFile.filename,
-            message: `Update ${newFile.filename}`,
+            message: `Update ${newFile.filename} (Part 2)`,
             committer: {
                 name: "eth-bot",
                 email: localConfig.commitEmail

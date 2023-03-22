@@ -7,7 +7,6 @@ import { PullRequestEvent, Repository, PullRequest } from "@octokit/webhooks-typ
 import processFiles from './process.js';
 import { RuleProcessed } from './types.js';
 import { performMergeAction } from './merge.js';
-import { generatePRTitle } from './namePr.js';
 
 const unknown = "<unknown>";
 const ThrottledOctokit = GitHub.plugin(throttling);
@@ -97,18 +96,6 @@ async function run() {
         repo: repository.name,
         pull_number
     });
-
-    // Update PR title
-    let newPRTitle = await generatePRTitle(octokit, config, repository, pull_number, files);
-    if (newPRTitle && newPRTitle != pull_request?.title) {
-        core.info(`Updating PR title from "${pull_request?.title}" to "${newPRTitle}"`);
-        await octokit.rest.pulls.update({
-            owner: repository.owner.login,
-            repo: repository.name,
-            pull_number,
-            title: newPRTitle
-        });
-    }
 
     // Get rule results
     let result = (await processFiles(octokit, config, files)).map((ruleog): RuleProcessed => {

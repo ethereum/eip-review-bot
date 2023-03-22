@@ -5,5 +5,6 @@ export default {
         "websitePrefix": "Website: ",
         "addEipPrefix": "Add EIP: ",
         "updateEipPrefix": "Update EIP-XXXX: ",
+        "ciPrefix": "CI: "
     }
 }

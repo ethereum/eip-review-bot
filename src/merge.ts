@@ -149,7 +149,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             }
 
             // Now, regenerate markdown from front matter
-            file.contents = `---\n${yaml.dump(frontmatter).trim()}\n---\n${fileData.body}`;
+            file.contents = `---\n${yaml.dump(frontmatter).trim()}---\n\n${fileData.body}`;
             
             // Push
             newFiles.push(file);

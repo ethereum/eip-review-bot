@@ -75,9 +75,10 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         tree_sha: currentCommit.treeSha,
         recursive: "true", // Why does this have to be a *string*?
     });
+    const newPaths = newFiles.map(file => file.filename);
     const oldPaths = oldFiles.map(file => file.filename);
     for (let oldTreeFile of oldTree.tree) {
-        if (oldTreeFile.type != "tree" && !oldPaths.includes(oldTreeFile.path as string)) {
+        if (oldTreeFile.type != "tree" && !(newPaths.includes(oldTreeFile.path as string) || oldPaths.includes(oldTreeFile.path as string))) {
             tree.push(oldTreeFile);
         }
     }
@@ -144,6 +145,8 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             file.contents = `---\n${yaml.dump(frontmatter).trim()}\n---\n\n${fileData.body}`;
             
             // Push
+            newFiles.push(file);
+        } else {
             newFiles.push(file);
         }
     }

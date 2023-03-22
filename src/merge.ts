@@ -31,6 +31,65 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository) {
     return eipNumber + Math.floor(Math.random() * 3) + 1;
 }
 
+async function updateFiles(octokit: Octokit, pull_request, oldFiles: File[], newFiles: File[]) {
+    let owner = pull_request.head.repo?.owner?.login as string;
+    let repo = pull_request.head.repo?.name as string;
+    let ref = pull_request.head.ref as string;
+    const { data: refData } = await octokit.git.getRef({
+        owner,
+        repo,
+        ref,
+    });
+    const commitSha = refData.object.sha;
+    const { data: commitData } = await octokit.git.getCommit({
+        owner,
+        repo,
+        commit_sha: commitSha,
+    });
+    const currentCommit = {
+        commitSha,
+        treeSha: commitData.tree.sha,
+    };
+    let blobs = [];
+    for (let i = 0; i < newFiles.length; i++) {
+        const content = newFiles[i].content;
+        const blobData = await octokit.git.createBlob({
+            owner: pull_request.head.repo?.owner?.login as string,
+            repo: pull_request.head.repo?.name as string,
+            content,
+            encoding: 'utf-8',
+        });
+        blobs.push(blobData.data);
+    }
+    const paths = newFiles.map(file => file.filename);
+    const tree = blobs.map(({ sha }, index) => ({
+        path: paths[index],
+        mode: `100644`,
+        type: `blob`,
+        sha,
+    })) as Octokit.GitCreateTreeParamsTree[];
+    const { data: newTree } = await octokit.git.createTree({
+        owner,
+        repo,
+        tree,
+        base_tree: currentCommit.treeSha,
+    });
+    const message = `My commit message`
+    const newCommit = (await octokit.git.createCommit({
+        owner,
+        repo,
+        message,
+        tree: newTree.sha,
+        parents: [currentCommit.commitSha],
+    })).data;
+    await octo.git.updateRef({
+        owner,
+        repo,
+        ref,
+        sha: newCommit.sha,
+    });
+}
+
 export async function performMergeAction(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[]) {
     // Fetch PR data
     let pull_request = (await octokit.rest.pulls.get({
@@ -78,38 +137,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     }
 
     // Push changes
-    for (let i = 0; i < files.length; i++) {
-        let oldFile = files[i];
-        let newFile = newFiles[i];
-
-        if (oldFile.status == "removed") {
-            continue;
-        }
-        // Delete old
-        await octokit.rest.repos.deleteFile({
-            owner: pull_request.head.repo?.owner?.login as string,
-            repo: pull_request.head.repo?.name as string,
-            path: oldFile.filename,
-            sha: oldFile.sha,
-            message: `Update ${newFile.filename} (Part 1)`,
-            committer: {
-                name: "eth-bot",
-                email: localConfig.commitEmail
-            },
-        });
-        // Create new
-        await octokit.rest.repos.createOrUpdateFileContents({
-            owner: pull_request.head.repo?.owner?.login as string,
-            repo: pull_request.head.repo?.name as string,
-            path: newFile.filename,
-            message: `Update ${newFile.filename} (Part 2)`,
-            committer: {
-                name: "eth-bot",
-                email: localConfig.commitEmail
-            },
-            content: Buffer.from(newFile.contents as string).toString('base64') as string
-        });
-    }
+    await updateFiles(octokit, pull_request, files, newFiles);
 
     // Enable auto merge
     // Need to use GraphQL API to enable auto merge

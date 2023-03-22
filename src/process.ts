@@ -16,7 +16,7 @@ import { generatePRTitle } from './namePr.js';
 
 let rules = [ checkAssets, checkAuthors, checkNew, checkStatus, checkStagnant, checkTerminalStatus, checkEditorFile, checkOtherFiles ];
 
-export default async function(octokit: Octokit, config: Config, files: File[]) {
+export default async function(octokit: Octokit, config: Config, files: File[], rename=true) {
     // Deconstruct
     const payload = github.context.payload as Partial<PullRequestEvent>;
     let repository = payload.repository as Repository;
@@ -95,14 +95,16 @@ export default async function(octokit: Octokit, config: Config, files: File[]) {
     }));
     
     // Rename PR
-    let newPRTitle = await generatePRTitle(octokit, config, repository, pull_number, files);
-    if (newPRTitle && newPRTitle != pull_request?.title) {
-        await octokit.rest.pulls.update({
-            owner: repository.owner.login,
-            repo: repository.name,
-            pull_number,
-            title: newPRTitle
-        });
+    if (rename){
+        let newPRTitle = await generatePRTitle(octokit, config, repository, pull_number, files);
+        if (newPRTitle && newPRTitle != pull_request?.title) {
+            await octokit.rest.pulls.update({
+                owner: repository.owner.login,
+                repo: repository.name,
+                pull_number,
+                title: newPRTitle
+            });
+        }
     }
 
     // Get results

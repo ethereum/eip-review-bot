@@ -5,7 +5,9 @@ import { throttling } from "@octokit/plugin-throttling";
 import { parse } from 'yaml';
 import { PullRequestEvent, Repository, PullRequest } from "@octokit/webhooks-types";
 import processFiles from './process.js';
-import { Rule, RuleProcessed } from './types.js';
+import { RuleProcessed } from './types.js';
+import { performMergeAction } from './merge.js';
+import { generatePRTitle } from './namePr.js';
 
 const unknown = "<unknown>";
 const ThrottledOctokit = GitHub.plugin(throttling);
@@ -46,6 +48,36 @@ async function run() {
     }
     core.info(`Running eip-review-bot on ${repository.owner.login}/${repository.name}#${pull_number} by "@${pull_request?.user?.login}"`);
 
+    // If PR doesn't have "allow edits from maintainers" enabled, error
+    if (!pull_request?.maintainer_can_modify) {
+        let body = "❌ PR does not have \"Allow edits from maintainers\" enabled. This is required for the EIP Review Bot to function. Please enable it."
+        let me = await octokit.rest.users.getAuthenticated();
+        let comments = await octokit.rest.issues.listComments({
+            owner: repository.owner.login,
+            repo: repository.name,
+            issue_number: pull_number
+        });
+        
+        let previous_comment = comments.data.find(comment => comment?.user?.login == me.data.login);
+        if (previous_comment) {
+            await octokit.rest.issues.updateComment({
+                owner: repository.owner.login,
+                repo: repository.name,
+                comment_id: previous_comment.id,
+                body
+            });
+        } else {
+            await octokit.rest.issues.createComment({
+                owner: repository.owner.login,
+                repo: repository.name,
+                issue_number: pull_number,
+                body
+            });
+        }
+        core.setFailed("PR does not have \"Allow edits from maintainers\" enabled. Please enable it.");
+        process.exit(5);
+    }
+
     // Pull and parse config file from EIPs repository (NOT PR HEAD)
     const response = await octokit.rest.repos.getContent({
         owner: repository.owner.login,
@@ -66,6 +98,19 @@ async function run() {
         pull_number
     });
 
+    // Update PR title
+    let newPRTitle = await generatePRTitle(octokit, config, repository, pull_number, files);
+    if (newPRTitle && newPRTitle != pull_request?.title) {
+        core.info(`Updating PR title from "${pull_request?.title}" to "${newPRTitle}"`);
+        await octokit.rest.pulls.update({
+            owner: repository.owner.login,
+            repo: repository.name,
+            pull_number,
+            title: newPRTitle
+        });
+    }
+
+    // Get rule results
     let result = (await processFiles(octokit, config, files)).map((ruleog): RuleProcessed => {
         let rule = ruleog as RuleProcessed;
         rule.reviewers = rule.reviewers.map(reviewer => reviewer.toLowerCase());
@@ -272,6 +317,9 @@ async function run() {
     if (!wholePassed) {
         core.setFailed('Not all reviewers have approved the pull request');
         process.exit(2);
+    } else {
+        core.info("Auto merging...");
+        await performMergeAction(octokit, config, repository, pull_number, files);
     }
 };
 

@@ -28,7 +28,7 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository) {
 
     // Add a random number from 1-5 to the EIP number
     // This is to prevent conflicts when multiple PRs are merged at the same time, and to prevent number gaming
-    return eipNumber + Math.floor(Math.random() * 5) + 1;
+    return eipNumber + Math.floor(Math.random() * 3) + 1;
 }
 
 export async function performMergeAction(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[]) {

@@ -35,7 +35,7 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository) {
 async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
     let owner = pull_request.head.repo?.owner?.login as string;
     let repo = pull_request.head.repo?.name as string;
-    let ref = pull_request.head.ref as string;
+    let ref = `heads/${pull_request.head.ref as string}`;
     const { data: refData } = await octokit.rest.git.getRef({
         owner,
         repo,
@@ -155,7 +155,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     }
 
     // Push changes
-    await updateFiles(octokit, pull_request, files, newFiles);
+    await updateFiles(octokit, pull_request as PullRequest, files, newFiles);
 
     // Enable auto merge
     // Need to use GraphQL API to enable auto merge

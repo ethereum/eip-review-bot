@@ -14,7 +14,19 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     if (title.match(":")) {
         title = title.split(":").slice(1).join(":").trim();
     }
+    
 
+    // If the PR modifies the website, use Website prefix
+
+    if (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".vue") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-"))) || file.filename.startsWith(".vitepress")) {
+        return localConfig.title.websitePrefix + title;
+    }
+    
+    // If the PR modifies EIP-1, indicate that
+    if (files.some(file => file.filename == "EIPS/eip-1.md")) {
+        return localConfig.title.updateEipPrefix.replace("EIP-XXXX", "EIP-1") + title;
+    }
+    
     // If the PR changes a file in the .github/workflows directory, use CI prefix
     if (files.some(file => file.filename.startsWith(".github/workflows"))) {
         return localConfig.title.ciPrefix + title;
@@ -23,11 +35,6 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     // If the PR changes a file in the config or .github directory, use Config prefix
     if (files.some(file => file.filename.startsWith("config/")) || files.some(file => file.filename.startsWith(".github"))) {
         return localConfig.title.configPrefix + title;
-    }
-
-    // If the PR modifies the website, use Website prefix
-    if (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".vue") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-")))) {
-        return localConfig.title.websitePrefix + title;
     }
 
     // If the PR modifies the EIP template, use Update Template

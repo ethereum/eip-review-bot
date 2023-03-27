@@ -113,6 +113,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     const title = pull_request.title;
 
     // Modify EIP data when needed
+    let anyFilesChanged = false;
     let newFiles = [];
     for (let file of files) {
         file = { ...file };
@@ -128,17 +129,23 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
 
                 frontmatter.eip = `${eip}`;
                 file.filename = `EIPS/eip-${eip}.md`;
+                
+                anyFilesChanged = true;
             }
 
             // Check if status needs setting
             if (!frontmatter.status) {
                 frontmatter.status = "Draft";
+                
+                anyFilesChanged = true;
             }
 
             // Check if last call deadline needs setting
             if (frontmatter.status == "Last Call" && !frontmatter["last-call-deadline"]) {
                 let fourteenDays = new Date(Date.now() + 12096e5);
                 frontmatter["last-call-deadline"] = new Date(`${fourteenDays.getUTCFullYear()}-${fourteenDays.getUTCMonth()}-${fourteenDays.getUTCDate()}`);
+                
+                anyFilesChanged = true;
             }
 
             // Now, regenerate markdown from front matter
@@ -152,7 +159,9 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     }
 
     // Push changes
-    await updateFiles(octokit, pull_request as PullRequest, files, newFiles);
+    if (anyFilesChanged) {
+        await updateFiles(octokit, pull_request as PullRequest, files, newFiles);
+    }
 
     // Enable auto merge
     // Need to use GraphQL API to enable auto merge

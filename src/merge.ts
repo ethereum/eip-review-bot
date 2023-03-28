@@ -6,7 +6,8 @@ import { PullRequest } from '@octokit/webhooks-types';
 
 async function generateEIPNumber(octokit: Octokit, repository: Repository, frontmatter: FrontMatter, filename: string, isMerging: boolean = false): Promise<string> {
     // Generate mnemonic name for draft EIPs or EIPs not yet about to be merged
-    if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) {
+    //if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) { // What I want to do
+    if (!isMerging && frontmatter.status == 'Draft') {
         let eip = frontmatter.title.match(/[^\s-_]+/)?.join('_').toLowerCase() as string;
         return `draft_${eip}`;
     }

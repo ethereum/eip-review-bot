@@ -6,11 +6,16 @@ import fm from "front-matter";
 
 export async function generatePRTitle(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[]) {
     // Get PR title, ignoring the prefix before the first colon
-    let title = (await octokit.rest.pulls.get({
+    let { title, user } = (await octokit.rest.pulls.get({
         owner: repository.owner.login,
         repo: repository.name,
         pull_number: pull_number
-    })).data.title;
+    })).data;
+
+    // Ignore PRs from Renovate
+    if (user?.login == "renovate[bot]") {
+        return title;
+    }
     
     if (title.match(":")) {
         title = title.split(":").slice(1).join(":").trim();

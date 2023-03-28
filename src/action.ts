@@ -77,29 +77,12 @@ async function run() {
         // If PR doesn't have "allow edits from maintainers" enabled, error
         if (!pull_request?.maintainer_can_modify && repository.owner.login != pull_request.base.repo.owner.login) {
             let body = "❌ PR does not have \"Allow edits from maintainers\" enabled. This is required for the EIP Review Bot to function. Please enable it."
-            let me = await octokit.rest.users.getAuthenticated();
-            let comments = await octokit.rest.issues.listComments({
+            previous_comment = (await octokit.rest.issues.updateComment({
                 owner: repository.owner.login,
                 repo: repository.name,
-                issue_number: pull_number
-            });
-            
-            let previous_comment = comments.data.find(comment => comment?.user?.login == me.data.login);
-            if (previous_comment) {
-                await octokit.rest.issues.updateComment({
-                    owner: repository.owner.login,
-                    repo: repository.name,
-                    comment_id: previous_comment.id,
-                    body
-                });
-            } else {
-                await octokit.rest.issues.createComment({
-                    owner: repository.owner.login,
-                    repo: repository.name,
-                    issue_number: pull_number,
-                    body
-                });
-            }
+                comment_id: previous_comment.id,
+                body
+            })).data;
             core.setFailed("PR does not have \"Allow edits from maintainers\" enabled. Please enable it.");
             process.exit(5);
         }
@@ -111,6 +94,12 @@ async function run() {
             path: core.getInput('config') || 'eip-editors.yml'
         });
         if (response.status !== 200) {
+            previous_comment = (await octokit.rest.issues.updateComment({
+                owner: repository.owner.login,
+                repo: repository.name,
+                comment_id: previous_comment.id,
+                body: `❌ Could not find config file at \`${core.getInput('config') || 'eip-editors.yml'}\`. Please ensure that the config file exists in the repository.`
+            })).data;
             core.setFailed(`Could not find file "${core.getInput('config') || 'eip-editors.yml'}"`);
             process.exit(3);
         }

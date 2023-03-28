@@ -18,7 +18,7 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     
 
     // If the PR modifies the website, use Website prefix
-    if (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".vue") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-")) || file.filename.startsWith(".vitepress"))) {
+    if (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".vue") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-") || file.filename.startsWith(".vitepress")))) {
         return localConfig.title.websitePrefix + title;
     }
     

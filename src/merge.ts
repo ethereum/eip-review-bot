@@ -181,7 +181,7 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
             let eip = oldFilename.split("-")?.[1];
             if (eip in oldEipToNewEip) {
                 // Rename file
-                file.filename = `assets/eip-${oldEipToNewEip[eip]}`;
+                file.filename = file.filename.replace(`eip-${eip}`, `eip-${oldEipToNewEip[eip].split("-")?.[1]}`);
 
                 if (oldFilename != file.filename) {
                     anyFilesChanged = true;

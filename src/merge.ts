@@ -4,16 +4,17 @@ import fm from 'front-matter';
 import yaml from 'js-yaml';
 import { PullRequest } from '@octokit/webhooks-types';
 
-async function generateEIPNumber(octokit: Octokit, repository: Repository, frontmatter: FrontMatter, filename: string, isMerging: boolean = false): Promise<string> {
+async function generateEIPNumber(octokit: Octokit, repository: Repository, frontmatter: FrontMatter, file: File, isMerging: boolean = false): Promise<string> {
     // Generate mnemonic name for draft EIPs or EIPs not yet about to be merged
-    if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) {
+    //if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) { // What I want to do
+    if (!isMerging && frontmatter.status == 'Draft' && file.status == 'added') { // What I have to do
         let eip = frontmatter.title.match(/[^\s-_]+/)?.join('_').toLowerCase() as string;
         return `draft_${eip}`;
     }
 
     // If filename already has an EIP number, use that
-    if (filename.startsWith('EIPS/eip-')) {
-        let eip = filename.split('-')[1].split('.')[0];
+    if (file.filename.startsWith('EIPS/eip-')) {
+        let eip = file.filename.split('-')[1].split('.')[0];
         if (eip.match(/^\d+$/)) {
             return eip;
         }
@@ -136,7 +137,7 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
             const frontmatter = fileData.attributes as FrontMatter;
 
             // Check if EIP number needs setting
-            let eip = await generateEIPNumber(octokit, repository, frontmatter, file.filename, isMerging);
+            let eip = await generateEIPNumber(octokit, repository, frontmatter, file, isMerging);
 
             frontmatter.eip = `${eip}`;
             let oldFilename = file.filename;

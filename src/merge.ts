@@ -149,7 +149,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             }
 
             // Now, regenerate markdown from front matter
-            file.contents = `---\n${yaml.dump(frontmatter).trim().replaceAll('T00:00:00.000Z', '')}\n---\n\n${fileData.body}`;
+            file.contents = `---\n${yaml.dump(frontmatter, ).trim().replaceAll('T00:00:00.000Z', '')}\n---\n\n${fileData.body}`;
             
             // Push
             newFiles.push(file);
@@ -166,35 +166,52 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     // Enable auto merge
     // Need to use GraphQL API to enable auto merge
     // https://docs.github.com/en/graphql/reference/mutations#enablepullrequestautomerge
-    /*const response = await octokit.graphql(`
-        query GetPullRequestId($owner: String!, $repo: String!, $pullRequestNumber: Int!) {
+    const response = await octokit.graphql(
+        // There's a bug with Prettier that breaks the syntax highlighting for the rest of the file if I don't do indentation like this
+        `query GetPullRequestId($owner: String!, $repo: String!, $pullRequestNumber: Int!) {
             repository(owner: $owner, name: $repo) {
                 pullRequest(number: $pullRequestNumber) {
                     id
                 }
             }
+        }`, {
+            owner: repository.owner.login,
+            repo: repository.name,
+            pullRequestNumber: pull_number
         }
-    `, {
-        owner: repository.owner.login,
-        repo: repository.name,
-        pullRequestNumber: pull_number
-    }) as any;
-    await octokit.graphql(`
-        mutation EnableAutoMerge($pullRequestId: ID!, $commitHeadline: String!, $authorEmail: String!) {
+    ) as any;
+    await octokit.graphql(
+        `mutation EnableAutoMerge(
+            $pullRequestId: ID!,
+            $commitHeadline: String,
+            $commitBody: String,
+            $expectedHeadOld: GitObjectID,
+            $mergeMethod: PullRequestMergeMethod!,
+        ) {
             enablePullRequestAutoMerge(input: {
                 pullRequestId: $pullRequestId,
                 commitHeadline: $commitHeadline,
-                authorEmail: $authorEmail,
-                clientMutationId: "enable-auto-merge"
+                commitBody: $commitBody,
+                expectedHeadOld: $expectedHeadOld,
+                mergeMethod: $mergeMethod,
             }) {
-                clientMutationId
+                pullRequest {
+                    autoMergeRequest {
+                        enabledAt
+                        enabledBy {
+                            login
+                        }
+                    }
+                }
             }
+        }`, {
+            pullRequestId: response.repository.pullRequest.id,
+            commitHeadline: title,
+            commitBody: `Merged by EIP-Bot.`,
+            expectedHeadOld: pull_request.head.sha,
+            mergeMethod: "SQUASH"
         }
-    `, {
-        pullRequestId: response.repository.pullRequest.id,
-        commitHeadline: title,
-        authorEmail: localConfig.commitEmail
-    });
+    );
 
     // Approve PR
     await octokit.rest.pulls.createReview({
@@ -202,6 +219,6 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
         repo: repository.name,
         pull_number: pull_number,
         event: "APPROVE",
-        body: "All reviewers have approved; Merging..."
-    });*/
+        body: "All Reviewers Have Approved; Performing Automatic Merge..."
+    });
 }

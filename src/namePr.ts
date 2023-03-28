@@ -1,5 +1,6 @@
 import type { Octokit, Config, File } from "./types";
 import type { Repository } from "@octokit/webhooks-types";
+import type { FrontMatter } from "./types";
 import localConfig from "./localConfig";
 import fm from "front-matter";
 
@@ -17,8 +18,7 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     
 
     // If the PR modifies the website, use Website prefix
-
-    if (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".vue") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-"))) || file.filename.startsWith(".vitepress")) {
+    if (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".vue") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-")) || file.filename.startsWith(".vitepress"))) {
         return localConfig.title.websitePrefix + title;
     }
     
@@ -50,14 +50,14 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     // If the PR adds a new EIP, use Add EIP prefix
     if (files.some(file => file.filename.startsWith("EIPS/eip-") && file.status === "added")) {
         let theFile = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "added");
-        let frontMatter = fm<FrontMatter>(theFile.contents as string);
+        let frontMatter = fm<FrontMatter>(theFile?.contents as string);
         return localConfig.title.addEipPrefix + frontMatter.attributes?.title;
     }
 
     // If the PR updates an existing EIP's status, use Update EIP prefix and custom title
     if (files.some(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))) {
         let eipNumber = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
-        let newStatus = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))?.patch?.match(/(?<=\+status:\W?)\w[^\r\n]*/g)[0] as string;
+        let newStatus = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))?.patch?.match(/(?<=\+status:\W?)\w[^\r\n]*/g)?.[0] as string;
         return localConfig.title.updateEipPrefix.replace("XXXX", eipNumber) + `Move to ${newStatus}`;
     }
 

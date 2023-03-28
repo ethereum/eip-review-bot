@@ -185,14 +185,12 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             $pullRequestId: ID!,
             $commitHeadline: String,
             $commitBody: String,
-            $expectedHeadOld: GitObjectID,
             $mergeMethod: PullRequestMergeMethod!,
         ) {
             enablePullRequestAutoMerge(input: {
                 pullRequestId: $pullRequestId,
                 commitHeadline: $commitHeadline,
                 commitBody: $commitBody,
-                expectedHeadOld: $expectedHeadOld,
                 mergeMethod: $mergeMethod,
             }) {
                 pullRequest {
@@ -208,7 +206,6 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             pullRequestId: response.repository.pullRequest.id,
             commitHeadline: title,
             commitBody: `Merged by EIP-Bot.`,
-            expectedHeadOld: pull_request.head.sha,
             mergeMethod: "SQUASH"
         }
     );

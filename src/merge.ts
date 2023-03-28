@@ -128,6 +128,7 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
     // Modify EIP data when needed
     let anyFilesChanged = false;
     let newFiles = [];
+    let oldEipToNewEip: { [key: string]: string } = {};
     for (let file of files) {
         file = { ...file };
         if (file.filename.endsWith('.md')) {
@@ -145,6 +146,14 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
             
             if (oldFilename != file.filename) {
                 anyFilesChanged = true;
+                oldEipToNewEip[oldFilename.split("-")?.[1]] = file.filename;
+
+                // Retroactively update asset files
+                for (let i = 0; i < newFiles.length; i++) {
+                    if (newFiles[i].filename.startsWith(`assets/eip-${oldFilename.split("-")?.[1]}`)) {
+                        newFiles[i].filename = newFiles[i].filename.replace(`eip-${oldFilename.split("-")?.[1]}`, `eip-${eip}`);
+                    }
+                }
             }
 
             // Check if status needs setting
@@ -165,6 +174,20 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
             // Now, regenerate markdown from front matter
             file.contents = `---\n${yaml.dump(frontmatter, ).trim().replaceAll('T00:00:00.000Z', '')}\n---\n\n${fileData.body}`;
             
+            // Push
+            newFiles.push(file);
+        } else if (file.filename.startsWith('assets/eip-')) {
+            let oldFilename = file.filename;
+            let eip = oldFilename.split("-")?.[1];
+            if (eip in oldEipToNewEip) {
+                // Rename file
+                file.filename = file.filename.replace(`eip-${eip}`, `eip-${oldEipToNewEip[eip].split("-")?.[1]}`);
+
+                if (oldFilename != file.filename) {
+                    anyFilesChanged = true;
+                }
+            }
+
             // Push
             newFiles.push(file);
         } else {

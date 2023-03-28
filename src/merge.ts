@@ -149,9 +149,9 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
                 oldEipToNewEip[oldFilename.split("-")?.[1]] = file.filename;
 
                 // Retroactively update asset files
-                for (let i = 0; i < files.length; i++) {
-                    if (files[i].filename.startsWith(`assets/eip-${oldFilename.split("-")?.[1]}`)) {
-                        files[i].filename = files[i].filename.replace(`eip-${oldFilename.split("-")?.[1]}`, `eip-${eip}`);
+                for (let i = 0; i < newFiles.length; i++) {
+                    if (newFiles[i].filename.startsWith(`assets/eip-${oldFilename.split("-")?.[1]}`)) {
+                        newFiles[i].filename = newFiles[i].filename.replace(`eip-${oldFilename.split("-")?.[1]}`, `eip-${eip}`);
                     }
                 }
             }

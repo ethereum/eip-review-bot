@@ -8,7 +8,7 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
     // Generate mnemonic name for draft EIPs or EIPs not yet about to be merged
     //if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) { // What I want to do
     if (!isMerging && frontmatter.status == 'Draft' && file.status == 'added') { // What I have to do
-        let eip = frontmatter.title.split(/[\s-_]+/)?.join('_').toLowerCase() as string;
+        let eip = frontmatter.title.split(/[^\w\d]+/)?.join('_').toLowerCase() as string;
         return `draft_${eip}`;
     }
 

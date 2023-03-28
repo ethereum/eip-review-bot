@@ -6,7 +6,7 @@ import { parse } from 'yaml';
 import { PullRequestEvent, Repository, PullRequest } from "@octokit/webhooks-types";
 import processFiles from './process.js';
 import { RuleProcessed } from './types.js';
-import { performMergeAction } from './merge.js';
+import { performMergeAction, preMergeChanges } from './merge.js';
 
 const unknown = "<unknown>";
 const ThrottledOctokit = GitHub.plugin(throttling);
@@ -302,6 +302,7 @@ async function run() {
         }
 
         if (!wholePassed) {
+            await preMergeChanges(octokit, config, repository, pull_number, files, false); // Even if we don't merge, we still want to update PRs where possible
             core.setFailed('Not all reviewers have approved the pull request');
             process.exit(100);
         } else {

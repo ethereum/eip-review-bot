@@ -1,11 +1,24 @@
 import { Config, File, Octokit, FrontMatter } from './types';
 import type { Repository } from '@octokit/webhooks-types';
-import localConfig from './localConfig';
 import fm from 'front-matter';
 import yaml from 'js-yaml';
 import { PullRequest } from '@octokit/webhooks-types';
 
-async function generateEIPNumber(octokit: Octokit, repository: Repository) {
+async function generateEIPNumber(octokit: Octokit, repository: Repository, frontmatter: FrontMatter, filename: string, isMerging: boolean = false): Promise<string> {
+    // Generate mnemonic name for draft EIPs or EIPs not yet about to be merged
+    if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) {
+        let eip = frontmatter.title.match(/[^\s-_]+/)?.join('_').toLowerCase() as string;
+        return `draft_${eip}`;
+    }
+
+    // If filename already has an EIP number, use that
+    if (filename.startsWith('EIPS/eip-')) {
+        let eip = filename.split('-')[1].split('.')[0];
+        if (eip.match(/^\d+$/)) {
+            return eip;
+        }
+    }
+
     // Get all EIPs
     const eips = (await octokit.rest.repos.getContent({
         owner: repository.owner.login,
@@ -29,7 +42,7 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository) {
 
     // Add a random number from 1-5 to the EIP number
     // This is to prevent conflicts when multiple PRs are merged at the same time, and to prevent number gaming
-    return eipNumber + Math.floor(Math.random() * 3) + 1;
+    return (eipNumber + Math.floor(Math.random() * 3) + 1).toString();
 }
 
 async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
@@ -103,14 +116,13 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     });
 }
 
-export async function performMergeAction(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[]) {
+export async function preMergeChanges(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[], isMerging: boolean = false) {
     // Fetch PR data
     let pull_request = (await octokit.rest.pulls.get({
         owner: repository.owner.login,
         repo: repository.name,
         pull_number: pull_number
     })).data;
-    const title = pull_request.title;
 
     // Modify EIP data when needed
     let anyFilesChanged = false;
@@ -124,12 +136,13 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             const frontmatter = fileData.attributes as FrontMatter;
 
             // Check if EIP number needs setting
-            if (!frontmatter.eip && frontmatter.status != "Draft") {
-                let eip = await generateEIPNumber(octokit, repository);
+            let eip = await generateEIPNumber(octokit, repository, frontmatter, file.filename, isMerging);
 
-                frontmatter.eip = `${eip}`;
-                file.filename = `EIPS/eip-${eip}.md`;
-                
+            frontmatter.eip = `${eip}`;
+            let oldFilename = file.filename;
+            file.filename = `EIPS/eip-${eip}.md`;
+            
+            if (oldFilename != file.filename) {
                 anyFilesChanged = true;
             }
 
@@ -162,6 +175,19 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     if (anyFilesChanged) {
         await updateFiles(octokit, pull_request as PullRequest, files, newFiles);
     }
+}
+
+export async function performMergeAction(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[]) {
+    // Fetch PR data
+    let pull_request = (await octokit.rest.pulls.get({
+        owner: repository.owner.login,
+        repo: repository.name,
+        pull_number: pull_number
+    })).data;
+    const title = pull_request.title;
+    
+    // Make pre-merge changes
+    await preMergeChanges(octokit, _, repository, pull_number, files, true);
 
     // Enable auto merge
     // Need to use GraphQL API to enable auto merge

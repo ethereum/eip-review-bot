@@ -327,8 +327,7 @@ async function run() {
             comment_id: previous_comment.id,
             body: `🛑 \`eip-review-bot\` failed for an unknown reason. Please see logs for more details, and report this issue at the [\`eip-review-bot\` repository](https://github.com/ethereum/eip-review-bot).`
         })).data;
-        core.setFailed(e);
-        process.exit(2);
+        throw e;
     }
 };
 

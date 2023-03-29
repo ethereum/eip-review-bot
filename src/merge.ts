@@ -68,14 +68,16 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     let blobs = [];
     for (let i = 0; i < newFiles.length; i++) {
         const content = newFiles[i].contents as string;
-        const blobData = await octokit.rest.git.createBlob({
+        const blobDataPromise = octokit.rest.git.createBlob({
             owner: "ethereum", // TODO: Don't hardcode
             repo: "EIPs", // TODO: Don't hardcode
             content,
             encoding: 'utf-8',
         });
-        blobs.push(blobData.data);
+        blobs.push(blobDataPromise);
     }
+    blobs = await Promise.all(blobs);
+    blobs = blobs.map(blob => blob.data);
     const paths = newFiles.map(file => file.filename);
     const tree = blobs.map(({ sha }, index) => ({
         path: paths[index],

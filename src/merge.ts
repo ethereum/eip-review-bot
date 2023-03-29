@@ -103,8 +103,8 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     });
     const message = `Commit from EIP-Bot`;
     const newCommit = (await octokit.rest.git.createCommit({
-        owner,
-        repo,
+        owner: "ethereum", // TODO: Don't hardcode
+        repo: "EIPs", // TODO: Don't hardcode
         message,
         tree: newTree.sha,
         parents: [currentCommit.commitSha],

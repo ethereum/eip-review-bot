@@ -69,8 +69,8 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     for (let i = 0; i < newFiles.length; i++) {
         const content = newFiles[i].contents as string;
         const blobData = await octokit.rest.git.createBlob({
-            owner: pull_request.head.repo?.owner?.login as string,
-            repo: pull_request.head.repo?.name as string,
+            owner: "ethereum", // TODO: Don't hardcode
+            repo: "EIPs", // TODO: Don't hardcode
             content,
             encoding: 'utf-8',
         });

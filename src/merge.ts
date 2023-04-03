@@ -95,7 +95,50 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     const oldPaths = oldFiles.map(file => file.filename);
     for (let oldTreeFile of oldTree.tree) {
         if (oldTreeFile.type != "tree" && !(newPaths.includes(oldTreeFile.path as string) || oldPaths.includes(oldTreeFile.path as string))) {
-            tree.push(oldTreeFile);
+            let blobLogin = oldTreeFile.url?.match(/(?<=repos\/)[\w\d-]+(?=\/[\w\d-]+\/)/)?.[0] as string;
+            let blobRepo = oldTreeFile.url?.match(/(?<=repos\/[\w\d-]+\/)[\w\d-]+(?=\/)/)?.[0] as string;
+            if (blobLogin != parentOwner || blobRepo != parentRepo) {
+                // First, make sure the blob doesn't already exist in the parent repo
+                try {
+                    const { data: blobExists } = await octokit.rest.git.getBlob({
+                        owner: parentOwner,
+                        repo: parentRepo,
+                        file_sha: oldTreeFile.sha as string,
+                    });
+                    if (blobExists.content) {
+                        tree.push({
+                            path: oldTreeFile.path,
+                            mode: `100644`,
+                            type: oldTreeFile.type,
+                            sha: oldTreeFile.sha,
+                        });
+                        continue;
+                    }
+                } catch (e) {
+                    // Blob doesn't exist in parent repo
+                }
+
+                // If it doesn't, create it
+                const { data: blobData } = await octokit.rest.git.getBlob({
+                    owner: blobLogin,
+                    repo: blobRepo,
+                    file_sha: oldTreeFile.sha as string,
+                });
+                const { data: newBlobData } = await octokit.rest.git.createBlob({
+                    owner: parentOwner,
+                    repo: parentRepo,
+                    content: blobData.content as string,
+                    encoding: 'base64',
+                });
+                tree.push({
+                    path: oldTreeFile.path,
+                    mode: `100644`,
+                    type: oldTreeFile.type,
+                    sha: newBlobData.sha,
+                });
+            } else {
+                tree.push(oldTreeFile);
+            }
         }
     }
     const { data: newTree } = await octokit.rest.git.createTree({
@@ -104,13 +147,13 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         tree,
     });
     const message = `Commit from EIP-Bot`;
-    const newCommit = (await octokit.rest.git.createCommit({
+    const { data: newCommit } = await octokit.rest.git.createCommit({
         owner: parentOwner,
         repo: parentRepo,
         message,
         tree: newTree.sha,
         parents: [currentCommit.commitSha],
-    })).data;
+    });
 
     // Workaround. What we want to do is:
     //await octokit.rest.git.updateRef({
@@ -125,10 +168,10 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     // We then set the PR to merge into the default branch, and delete the temporary branch.
     // This is a bit hacky, but it works.
     let tempBranchName = `eipbot/${pull_request.number}`;
-    let defaultBranch = (await octokit.rest.repos.get({
+    let { data: { default_branch: defaultBranch }} = await octokit.rest.repos.get({
         owner: parentOwner,
         repo: parentRepo,
-    })).data.default_branch;
+    });
     await octokit.rest.git.createRef({
         owner: parentOwner,
         repo: parentRepo,

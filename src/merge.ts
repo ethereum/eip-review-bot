@@ -46,7 +46,7 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
     return (eipNumber + Math.floor(Math.random() * 3) + 1).toString();
 }
 
-async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
+async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[], prChangedFiles: File[]) {
     let owner = pull_request.head.repo?.owner?.login as string;
     let repo = pull_request.head.repo?.name as string;
     let parentOwner = pull_request.base.repo?.owner?.login as string;
@@ -106,6 +106,16 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
                 type: oldTreeFile.type as string,
                 sha: oldTreeFile.sha as string,
             }); // Already in the right repo
+            return;
+        }
+        // If the file isn't changed in the PR, we can safely assume that it's already in the parent repo
+        if (oldFiles.map(file => file.filename).includes(oldTreeFile.path as string)) {
+            tree.push({
+                path: oldTreeFile.path as string,
+                mode: oldTreeFile.mode as string,
+                type: oldTreeFile.type as string,
+                sha: oldTreeFile.sha as string,
+            });
             return;
         }
         // Copy the blob from the old repo to the new repo

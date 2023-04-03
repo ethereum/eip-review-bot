@@ -112,7 +112,7 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
                             type: oldTreeFile.type,
                             sha: oldTreeFile.sha,
                         });
-                        continue;
+                        return;
                     }
                 } catch (e) {
                     // Blob doesn't exist in parent repo

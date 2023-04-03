@@ -47,9 +47,10 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
 }
 
 async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
-    return; // TODO: This is a temporarily disable
     let owner = pull_request.head.repo?.owner?.login as string;
     let repo = pull_request.head.repo?.name as string;
+    let parentOwner = pull_request.base.repo?.owner?.login as string;
+    let parentRepo = pull_request.base.repo?.name as string;
     let ref = `heads/${pull_request.head.ref as string}`;
     const { data: refData } = await octokit.rest.git.getRef({
         owner,
@@ -70,8 +71,8 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     for (let i = 0; i < newFiles.length; i++) {
         const content = newFiles[i].contents as string;
         const blobData = await octokit.rest.git.createBlob({
-            owner: "ethereum", // TODO: Don't hardcode
-            repo: "EIPs", // TODO: Don't hardcode
+            owner: parentOwner,
+            repo: parentRepo,
             content,
             encoding: 'utf-8',
         });
@@ -98,23 +99,64 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         }
     }
     const { data: newTree } = await octokit.rest.git.createTree({
-        owner: "ethereum", // TODO: Don't hardcode
-        repo: "EIPs", // TODO: Don't hardcode
+        owner: parentOwner,
+        repo: parentRepo,
         tree,
     });
     const message = `Commit from EIP-Bot`;
     const newCommit = (await octokit.rest.git.createCommit({
-        owner: "ethereum", // TODO: Don't hardcode
-        repo: "EIPs", // TODO: Don't hardcode
+        owner: parentOwner,
+        repo: parentRepo,
         message,
         tree: newTree.sha,
         parents: [currentCommit.commitSha],
     })).data;
-    await octokit.rest.git.updateRef({
-        owner,
-        repo,
-        ref,
+
+    // Workaround. What we want to do is:
+    //await octokit.rest.git.updateRef({
+    //    owner,
+    //    repo,
+    //    ref,
+    //    sha: newCommit.sha,
+    //});
+    // However, GitHub's API is broken and doesn't allow us to update the ref. So we have to modify the PR another way.
+    // We do this by making a new branch on the ethereum/EIPs repo, then we set the PR to merge into that branch.
+    // Then, we merge changes from the ethereum/EIPs repo into the PR branch.
+    // We then set the PR to merge into the default branch, and delete the temporary branch.
+    // This is a bit hacky, but it works.
+    let tempBranchName = `eipbot/${pull_request.number}`;
+    let defaultBranch = (await octokit.rest.repos.get({
+        owner: parentOwner,
+        repo: parentRepo,
+    })).data.default_branch;
+    await octokit.rest.git.createRef({
+        owner: parentOwner,
+        repo: parentRepo,
+        ref: `refs/heads/${tempBranchName}`,
         sha: newCommit.sha,
+    });
+    await octokit.rest.pulls.update({
+        owner: parentOwner,
+        repo: parentRepo,
+        pull_number: pull_request.number,
+        base: tempBranchName,
+    });
+    await octokit.rest.pulls.merge({
+        owner: parentOwner,
+        repo: parentRepo,
+        pull_number: pull_request.number,
+        expected_head_sha: currentCommit.commitSha,
+    });
+    await octokit.rest.pulls.update({
+        owner: parentOwner,
+        repo: parentRepo,
+        pull_number: pull_request.number,
+        base: defaultBranch,
+    });
+    await octokit.rest.git.deleteRef({
+        owner: parentOwner,
+        repo: parentRepo,
+        ref: `heads/${tempBranchName}`,
     });
 }
 

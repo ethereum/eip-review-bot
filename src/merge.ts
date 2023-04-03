@@ -188,13 +188,13 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             pull_number: pull_request.number,
             merge_method: "squash"
         });
+    } finally {
         await octokit.rest.pulls.update({
             owner: parentOwner,
             repo: parentRepo,
             pull_number: pull_request.number,
             base: defaultBranch,
         });
-    } finally {
         await octokit.rest.git.deleteRef({
             owner: parentOwner,
             repo: parentRepo,

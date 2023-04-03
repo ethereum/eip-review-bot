@@ -70,6 +70,7 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     let blobs = [];
     for (let i = 0; i < newFiles.length; i++) {
         const content = newFiles[i].contents as string;
+        // We are creating the commit in the parent repo, so we need to create the blobs in the parent repo
         const blobData = await octokit.rest.git.createBlob({
             owner: parentOwner,
             repo: parentRepo,
@@ -93,58 +94,45 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     });
     const newPaths = newFiles.map(file => file.filename);
     const oldPaths = oldFiles.map(file => file.filename);
-    await Promise.all(oldTree.tree.map(async (oldTreeFile: any) => { // So that these can be done in parallel
-        if (oldTreeFile.type != "tree" && !(newPaths.includes(oldTreeFile.path as string) || oldPaths.includes(oldTreeFile.path as string))) {
-            let blobLogin = oldTreeFile.url?.match(/(?<=repos\/)[\w\d-]+(?=\/[\w\d-]+\/)/)?.[0] as string;
-            let blobRepo = oldTreeFile.url?.match(/(?<=repos\/[\w\d-]+\/)[\w\d-]+(?=\/)/)?.[0] as string;
-            if (blobLogin != parentOwner || blobRepo != parentRepo) {
-                // First, make sure the blob doesn't already exist in the parent repo
-                try {
-                    const { data: blobExists } = await octokit.rest.git.getBlob({
-                        owner: parentOwner,
-                        repo: parentRepo,
-                        file_sha: oldTreeFile.sha as string,
-                    });
-                    if (blobExists.content) {
-                        tree.push({
-                            path: oldTreeFile.path,
-                            mode: `100644`,
-                            type: oldTreeFile.type,
-                            sha: oldTreeFile.sha,
-                        });
-                        return;
-                    }
-                } catch (e) {
-                    // Blob doesn't exist in parent repo
-                }
-
-                // If it doesn't, create it
-                const { data: blobData } = await octokit.rest.git.getBlob({
-                    owner: blobLogin,
-                    repo: blobRepo,
-                    file_sha: oldTreeFile.sha as string,
-                });
-                const { data: newBlobData } = await octokit.rest.git.createBlob({
-                    owner: parentOwner,
-                    repo: parentRepo,
-                    content: blobData.content as string,
-                    encoding: 'base64',
-                });
-                tree.push({
-                    path: oldTreeFile.path,
-                    mode: `100644`,
-                    type: oldTreeFile.type,
-                    sha: newBlobData.sha,
-                });
-            } else {
-                tree.push(oldTreeFile);
-            }
+    await Promise.all(oldTree.tree.map(async (oldTreeFile) => { // So that these can be done in parallel
+        if (oldTreeFile.type == "tree") return; // Skip directories
+        if (newPaths.includes(oldTreeFile.path as string) || oldPaths.includes(oldTreeFile.path as string)) return; // Skip files that are already in the new tree
+        let blobOwner = oldTreeFile.url?.match(/(?<=repos\/)[\w\d-]+(?=\/[\w\d-]+\/)/)?.[0] as string;
+        let blobRepo = oldTreeFile.url?.match(/(?<=repos\/[\w\d-]+\/)[\w\d-]+(?=\/)/)?.[0] as string;
+        if (blobOwner == parentOwner && blobRepo == parentRepo) {
+            tree.push({
+                path: oldTreeFile.path as string,
+                mode: oldTreeFile.mode as string,
+                type: oldTreeFile.type as string,
+                sha: oldTreeFile.sha as string,
+            }); // Already in the right repo
+            return;
         }
+        // Copy the blob from the old repo to the new repo
+        const { data: blobData } = await octokit.rest.git.getBlob({
+            owner: blobOwner,
+            repo: blobRepo,
+            file_sha: oldTreeFile.sha as string,
+        });
+        const { data: newBlobData } = await octokit.rest.git.createBlob({
+            owner: parentOwner,
+            repo: parentRepo,
+            content: blobData.content as string,
+            encoding: blobData.encoding as string,
+        });
+        tree.push({
+            path: oldTreeFile.path as string,
+            mode: oldTreeFile.mode as string,
+            type: oldTreeFile.type as string,
+            sha: newBlobData.sha,
+        });
     }));
+    // We are creating the commit in the parent repo, so we need to create the tree in the parent repo
     const { data: newTree } = await octokit.rest.git.createTree({
         owner: parentOwner,
         repo: parentRepo,
         tree,
+        base_tree: undefined, // Since we are deleting files, we can't set a base tree
     });
     const message = `Commit from EIP-Bot`;
     const { data: newCommit } = await octokit.rest.git.createCommit({
@@ -188,7 +176,6 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         owner: parentOwner,
         repo: parentRepo,
         pull_number: pull_request.number,
-        expected_head_sha: currentCommit.commitSha,
     });
     await octokit.rest.pulls.update({
         owner: parentOwner,
@@ -200,6 +187,11 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         owner: parentOwner,
         repo: parentRepo,
         ref: `heads/${tempBranchName}`,
+    });
+    await octokit.rest.pulls.merge({
+        owner: parentOwner,
+        repo: parentRepo,
+        pull_number: pull_request.number,
     });
 }
 

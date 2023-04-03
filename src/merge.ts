@@ -9,6 +9,18 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
     //if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) { // What I want to do
     if (!isMerging && frontmatter.status == 'Draft' && file.status == 'added') { // What I have to do
         let eip = frontmatter.title.split(/[^\w\d]+/)?.join('_').toLowerCase() as string;
+        // If there are trailing underscores, remove them
+        while (eip.endsWith('_')) {
+            eip = eip.slice(0, -1);
+        }
+        // If there are leading underscores, remove them
+        while (eip.startsWith('_')) {
+            eip = eip.slice(1);
+        }
+        // If the name is too long, truncate it
+        if (eip.length > 30) {
+            eip = eip.slice(0, 30);
+        }
         return `draft_${eip}`;
     }
 

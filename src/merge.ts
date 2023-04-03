@@ -160,38 +160,52 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         owner: parentOwner,
         repo: parentRepo,
     });
-    await octokit.rest.git.createRef({
-        owner: parentOwner,
-        repo: parentRepo,
-        ref: `refs/heads/${tempBranchName}`,
-        sha: newCommit.sha,
-    });
-    await octokit.rest.pulls.update({
-        owner: parentOwner,
-        repo: parentRepo,
-        pull_number: pull_request.number,
-        base: tempBranchName,
-    });
+    try {
+        await octokit.rest.git.getRef({ // Will give 404 if doesn't exist
+            owner: parentOwner,
+            repo: parentRepo,
+            ref: `heads/${tempBranchName}`,
+        });
+    } catch (e: any) {
+        if (e.status != 404) throw e;
+        await octokit.rest.git.createRef({
+            owner: parentOwner,
+            repo: parentRepo,
+            ref: `refs/heads/${tempBranchName}`,
+            sha: newCommit.sha,
+        });
+    }
+    try {
+        await octokit.rest.pulls.update({
+            owner: parentOwner,
+            repo: parentRepo,
+            pull_number: pull_request.number,
+            base: tempBranchName,
+        });
+        await octokit.rest.pulls.merge({
+            owner: parentOwner,
+            repo: parentRepo,
+            pull_number: pull_request.number,
+            merge_method: "squash"
+        });
+        await octokit.rest.pulls.update({
+            owner: parentOwner,
+            repo: parentRepo,
+            pull_number: pull_request.number,
+            base: defaultBranch,
+        });
+    } finally {
+        await octokit.rest.git.deleteRef({
+            owner: parentOwner,
+            repo: parentRepo,
+            ref: `heads/${tempBranchName}`,
+        });
+    }
     await octokit.rest.pulls.merge({
         owner: parentOwner,
         repo: parentRepo,
         pull_number: pull_request.number,
-    });
-    await octokit.rest.pulls.update({
-        owner: parentOwner,
-        repo: parentRepo,
-        pull_number: pull_request.number,
-        base: defaultBranch,
-    });
-    await octokit.rest.git.deleteRef({
-        owner: parentOwner,
-        repo: parentRepo,
-        ref: `heads/${tempBranchName}`,
-    });
-    await octokit.rest.pulls.merge({
-        owner: parentOwner,
-        repo: parentRepo,
-        pull_number: pull_request.number,
+        merge_method: "squash"
     });
 }
 

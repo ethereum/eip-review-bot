@@ -42,6 +42,10 @@ async function run() {
             process.exit(4);
         }
         pull_request = pull_request_response.data as PullRequest;
+        if (pull_request.merged) {
+            core.info("Pull Request is already merged. Exiting.");
+            process.exit(0);
+        }
     } else {
         core.info("Detected pull_request_target configuration. Using GitHub-provided data.");
     }

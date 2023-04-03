@@ -46,7 +46,7 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
     return (eipNumber + Math.floor(Math.random() * 3) + 1).toString();
 }
 
-async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[], prChangedFiles: File[]) {
+async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
     let owner = pull_request.head.repo?.owner?.login as string;
     let repo = pull_request.head.repo?.name as string;
     let parentOwner = pull_request.base.repo?.owner?.login as string;

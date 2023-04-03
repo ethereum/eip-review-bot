@@ -93,7 +93,7 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     });
     const newPaths = newFiles.map(file => file.filename);
     const oldPaths = oldFiles.map(file => file.filename);
-    for (let oldTreeFile of oldTree.tree) {
+    await Promise.all(oldTree.tree.map(async (oldTreeFile: any) => { // So that these can be done in parallel
         if (oldTreeFile.type != "tree" && !(newPaths.includes(oldTreeFile.path as string) || oldPaths.includes(oldTreeFile.path as string))) {
             let blobLogin = oldTreeFile.url?.match(/(?<=repos\/)[\w\d-]+(?=\/[\w\d-]+\/)/)?.[0] as string;
             let blobRepo = oldTreeFile.url?.match(/(?<=repos\/[\w\d-]+\/)[\w\d-]+(?=\/)/)?.[0] as string;
@@ -140,7 +140,7 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
                 tree.push(oldTreeFile);
             }
         }
-    }
+    }));
     const { data: newTree } = await octokit.rest.git.createTree({
         owner: parentOwner,
         repo: parentRepo,

@@ -42,14 +42,16 @@ async function run() {
             process.exit(4);
         }
         pull_request = pull_request_response.data as PullRequest;
-        if (pull_request.merged) {
-            core.info("Pull Request is already merged. Exiting.");
-            process.exit(0);
-        }
     } else {
         core.info("Detected pull_request_target configuration. Using GitHub-provided data.");
     }
     core.info(`Running eip-review-bot on ${repository.owner.login}/${repository.name}#${pull_number} by "@${pull_request?.user?.login}"`);
+
+    // If PR is already merged, exit
+    if (pull_request.merged) {
+        core.info("Pull Request is already merged. Exiting.");
+        process.exit(0);
+    }
     
     // Get comment info
     let me = await octokit.rest.users.getAuthenticated();

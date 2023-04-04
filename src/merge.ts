@@ -59,7 +59,6 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
 }
 
 async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
-    return;
     let owner = pull_request.head.repo?.owner?.login as string;
     let repo = pull_request.head.repo?.name as string;
     let parentOwner = pull_request.base.repo?.owner?.login as string;
@@ -205,11 +204,10 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             pull_number: pull_request.number,
             base: tempBranchName,
         });
-        await octokit.rest.pulls.merge({
+        await octokit.rest.pulls.updateBranch({
             owner: parentOwner,
             repo: parentRepo,
-            pull_number: pull_request.number,
-            merge_method: "squash"
+            pull_number: pull_request.number
         });
     } finally {
         await octokit.rest.pulls.update({
@@ -224,11 +222,10 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             ref: `heads/${tempBranchName}`,
         });
     }
-    await octokit.rest.pulls.merge({
+    await octokit.rest.pulls.updateBranch({
         owner: parentOwner,
         repo: parentRepo,
-        pull_number: pull_request.number,
-        merge_method: "squash"
+        pull_number: pull_request.number
     });
 }
 

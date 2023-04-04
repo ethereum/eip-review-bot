@@ -188,6 +188,12 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             repo: parentRepo,
             ref: `heads/${tempBranchName}`,
         });
+        await octokit.rest.git.updateRef({ // Update the ref if it already exists
+            owner: parentOwner,
+            repo: parentRepo,
+            ref: `heads/${tempBranchName}`,
+            sha: newCommit.sha,
+        });
     } catch (e: any) {
         if (e.status != 404) throw e;
         await octokit.rest.git.createRef({
@@ -216,11 +222,11 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             pull_number: pull_request.number,
             base: defaultBranch,
         });
-        await octokit.rest.git.deleteRef({
-            owner: parentOwner,
-            repo: parentRepo,
-            ref: `heads/${tempBranchName}`,
-        });
+        //await octokit.rest.git.deleteRef({
+        //    owner: parentOwner,
+        //    repo: parentRepo,
+        //    ref: `heads/${tempBranchName}`,
+        //});
     }
     await octokit.rest.pulls.updateBranch({
         owner: parentOwner,

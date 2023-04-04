@@ -121,7 +121,7 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             return;
         }
         // If the file isn't changed in the PR, we can safely assume that it's already in the parent repo
-        if (oldFiles.map(file => file.filename).includes(oldTreeFile.path as string)) {
+        if (!oldFiles.map(file => file.filename).includes(oldTreeFile.path as string)) {
             tree.push({
                 path: oldTreeFile.path as string,
                 mode: oldTreeFile.mode as string,

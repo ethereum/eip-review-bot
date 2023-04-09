@@ -325,7 +325,7 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
                 // Generic options
                 lineWidth: -1, // No max line width for preamble
                 noRefs: true, // Disable YAML references
-            })
+            });
             newYaml = newYaml.trim(); // Get rid of excess whitespace
             newYaml = newYaml.replaceAll('T00:00:00.000Z', ''); // Mandated date formatting by EIP-1
             

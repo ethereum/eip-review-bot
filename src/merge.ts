@@ -188,21 +188,20 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             repo: parentRepo,
             ref: `heads/${tempBranchName}`,
         });
-        await octokit.rest.git.updateRef({ // Update the ref if it already exists
+        await octokit.rest.git.deleteRef({ // Delete ref if it does
             owner: parentOwner,
             repo: parentRepo,
             ref: `heads/${tempBranchName}`,
-            sha: newCommit.sha,
         });
     } catch (e: any) {
         if (e.status != 404) throw e;
-        await octokit.rest.git.createRef({
-            owner: parentOwner,
-            repo: parentRepo,
-            ref: `refs/heads/${tempBranchName}`,
-            sha: newCommit.sha,
-        });
     }
+    await octokit.rest.git.createRef({
+        owner: parentOwner,
+        repo: parentRepo,
+        ref: `refs/heads/${tempBranchName}`,
+        sha: newCommit.sha,
+    });
     try {
         await octokit.rest.pulls.update({
             owner: parentOwner,
@@ -228,11 +227,6 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         //    ref: `heads/${tempBranchName}`,
         //});
     }
-    await octokit.rest.pulls.updateBranch({
-        owner: parentOwner,
-        repo: parentRepo,
-        pull_number: pull_request.number
-    });
 }
 
 export async function preMergeChanges(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[], isMerging: boolean = false) {
@@ -290,7 +284,47 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
             }
 
             // Now, regenerate markdown from front matter
-            file.contents = `---\n${yaml.dump(frontmatter, ).trim().replaceAll('T00:00:00.000Z', '')}\n---\n\n${fileData.body}`;
+            let newYaml = yamp.dump(frontmatter, {
+                // Ensure preamble is in the right order
+                sortKeys: function (a, b) {
+                    let preambleOrder = [
+                        "eip",
+                        "title",
+                        "description",
+                        "author",
+                        "discussions-to",
+                        "status",
+                        "last-call-deadline",
+                        "type",
+                        "category",
+                        "created",
+                        "requires",
+                        "withdrawal-reason"
+                    ];
+                    return preambleOrder.indexOf(a) - preambleOrder.indexOf(b);
+                },
+                // Ensure that dates and integers are not turned into strings
+                replacer: function (key, value) {
+                    if (key == 'eip') {
+                        return parseInt(value); // Ensure that it's an integer
+                    }
+                    if (key == 'requires' && typeof value == 'string' && !value.includes(",")) {
+                        return parseInt(value); // Ensure that non-list requires aren't transformed into strings
+                    }
+                    if (key == 'created' || key == 'last-call-deadline') {
+                        return new Date(value); // Ensure that it's a date object
+                    }
+                    return value;
+                },
+                // Generic options
+                lineWidth: -1, // No max line width for preamble
+                noRefs: true, // Disable YAML references
+            });
+            newYaml = newYaml.trim(); // Get rid of excess whitespace
+            newYaml = newYaml.replaceAll('T00:00:00.000Z', ''); // Mandated date formatting by EIP-1
+            
+            // Regenerate file contents
+            file.contents = `---\n${newYaml}\n---\n\n${fileData.body}`;
             
             // Push
             newFiles.push(file);

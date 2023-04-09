@@ -284,7 +284,7 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
             }
 
             // Now, regenerate markdown from front matter
-            let newYaml = yamp.dump(frontmatter, {
+            let newYaml = yaml.dump(frontmatter, {
                 // Ensure preamble is in the right order
                 sortKeys: function (a, b) {
                     let preambleOrder = [

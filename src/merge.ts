@@ -188,21 +188,20 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             repo: parentRepo,
             ref: `heads/${tempBranchName}`,
         });
-        await octokit.rest.git.updateRef({ // Update the ref if it already exists
+        await octokit.rest.git.deleteRef({ // Delete ref if it does
             owner: parentOwner,
             repo: parentRepo,
             ref: `heads/${tempBranchName}`,
-            sha: newCommit.sha,
         });
     } catch (e: any) {
         if (e.status != 404) throw e;
-        await octokit.rest.git.createRef({
-            owner: parentOwner,
-            repo: parentRepo,
-            ref: `refs/heads/${tempBranchName}`,
-            sha: newCommit.sha,
-        });
     }
+    await octokit.rest.git.createRef({
+        owner: parentOwner,
+        repo: parentRepo,
+        ref: `refs/heads/${tempBranchName}`,
+        sha: newCommit.sha,
+    });
     try {
         await octokit.rest.pulls.update({
             owner: parentOwner,
@@ -228,11 +227,6 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         //    ref: `heads/${tempBranchName}`,
         //});
     }
-    await octokit.rest.pulls.updateBranch({
-        owner: parentOwner,
-        repo: parentRepo,
-        pull_number: pull_request.number
-    });
 }
 
 export async function preMergeChanges(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[], isMerging: boolean = false) {

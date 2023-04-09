@@ -202,6 +202,8 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         ref: `refs/heads/${tempBranchName}`,
         sha: newCommit.sha,
     });
+    // The PR doesn't recognize the commit right away. Wait 5 seconds.
+    await new Promise(resolve => setTimeout(resolve, 5000));
     try {
         await octokit.rest.pulls.update({
             owner: parentOwner,

@@ -321,7 +321,7 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
                         return new Date(value); // Ensure that it's a date object
                     }
                     return value;
-                }
+                },
                 // Generic options
                 lineWidth: -1, // No max line width for preamble
                 noRefs: true, // Disable YAML references

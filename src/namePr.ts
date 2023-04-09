@@ -57,7 +57,7 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
         let theFile = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "added");
         let frontMatter = fm<FrontMatter>(theFile?.contents as string);
         if (!frontMatter.attributes?.title) {
-            return undefined;
+            return false;
         }
         return localConfig.title.addEipPrefix + frontMatter.attributes?.title;
     }
@@ -76,5 +76,5 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     }
 
     // Default to the PR title
-    return title;
+    return false;
 }

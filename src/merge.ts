@@ -82,15 +82,16 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     let blobs = [];
     for (let i = 0; i < newFiles.length; i++) {
         const content = newFiles[i].contents as string;
-        // We are creating the commit in the parent repo, so we need to create the blobs in the parent repo
-        const blobData = await octokit.rest.git.createBlob({
+        const blobDataPromise = octokit.rest.git.createBlob({
             owner: parentOwner,
             repo: parentRepo,
             content,
             encoding: 'utf-8',
         });
-        blobs.push(blobData.data);
+        blobs.push(blobDataPromise);
     }
+    blobs = await Promise.all(blobs);
+    blobs = blobs.map(blob => blob.data);
     const paths = newFiles.map(file => file.filename);
     const tree = blobs.map(({ sha }, index) => ({
         path: paths[index],

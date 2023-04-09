@@ -56,6 +56,9 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     if (files.some(file => file.filename.startsWith("EIPS/eip-") && file.status === "added")) {
         let theFile = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "added");
         let frontMatter = fm<FrontMatter>(theFile?.contents as string);
+        if (!frontMatter.attributes?.title) {
+            return undefined;
+        }
         return localConfig.title.addEipPrefix + frontMatter.attributes?.title;
     }
 

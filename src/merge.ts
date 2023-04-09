@@ -9,6 +9,18 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
     //if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) { // What I want to do
     if (!isMerging && frontmatter.status == 'Draft' && file.status == 'added') { // What I have to do
         let eip = frontmatter.title.split(/[^\w\d]+/)?.join('_').toLowerCase() as string;
+        // If there are trailing underscores, remove them
+        while (eip.endsWith('_')) {
+            eip = eip.slice(0, -1);
+        }
+        // If there are leading underscores, remove them
+        while (eip.startsWith('_')) {
+            eip = eip.slice(1);
+        }
+        // If the name is too long, truncate it
+        if (eip.length > 30) {
+            eip = eip.slice(0, 30);
+        }
         return `draft_${eip}`;
     }
 
@@ -49,6 +61,8 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
 async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
     let owner = pull_request.head.repo?.owner?.login as string;
     let repo = pull_request.head.repo?.name as string;
+    let parentOwner = pull_request.base.repo?.owner?.login as string;
+    let parentRepo = pull_request.base.repo?.name as string;
     let ref = `heads/${pull_request.head.ref as string}`;
     const { data: refData } = await octokit.rest.git.getRef({
         owner,
@@ -69,8 +83,8 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     for (let i = 0; i < newFiles.length; i++) {
         const content = newFiles[i].contents as string;
         const blobDataPromise = octokit.rest.git.createBlob({
-            owner: "ethereum", // TODO: Don't hardcode
-            repo: "EIPs", // TODO: Don't hardcode
+            owner: parentOwner,
+            repo: parentRepo,
             content,
             encoding: 'utf-8',
         });
@@ -93,30 +107,129 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     });
     const newPaths = newFiles.map(file => file.filename);
     const oldPaths = oldFiles.map(file => file.filename);
-    for (let oldTreeFile of oldTree.tree) {
-        if (oldTreeFile.type != "tree" && !(newPaths.includes(oldTreeFile.path as string) || oldPaths.includes(oldTreeFile.path as string))) {
-            tree.push(oldTreeFile);
+    await Promise.all(oldTree.tree.map(async (oldTreeFile) => { // So that these can be done in parallel
+        if (oldTreeFile.type == "tree") return; // Skip directories
+        if (newPaths.includes(oldTreeFile.path as string) || oldPaths.includes(oldTreeFile.path as string)) return; // Skip files that are already in the new tree
+        let blobOwner = oldTreeFile.url?.match(/(?<=repos\/)[\w\d-]+(?=\/[\w\d-]+\/)/)?.[0] as string;
+        let blobRepo = oldTreeFile.url?.match(/(?<=repos\/[\w\d-]+\/)[\w\d-]+(?=\/)/)?.[0] as string;
+        if (blobOwner == parentOwner && blobRepo == parentRepo) {
+            tree.push({
+                path: oldTreeFile.path as string,
+                mode: oldTreeFile.mode as string,
+                type: oldTreeFile.type as string,
+                sha: oldTreeFile.sha as string,
+            }); // Already in the right repo
+            return;
         }
-    }
+        // If the file isn't changed in the PR, we can safely assume that it's already in the parent repo
+        if (!oldFiles.map(file => file.filename).includes(oldTreeFile.path as string)) {
+            tree.push({
+                path: oldTreeFile.path as string,
+                mode: oldTreeFile.mode as string,
+                type: oldTreeFile.type as string,
+                sha: oldTreeFile.sha as string,
+            });
+            return;
+        }
+        // Copy the blob from the old repo to the new repo
+        const { data: blobData } = await octokit.rest.git.getBlob({
+            owner: blobOwner,
+            repo: blobRepo,
+            file_sha: oldTreeFile.sha as string,
+        });
+        const { data: newBlobData } = await octokit.rest.git.createBlob({
+            owner: parentOwner,
+            repo: parentRepo,
+            content: blobData.content as string,
+            encoding: blobData.encoding as string,
+        });
+        tree.push({
+            path: oldTreeFile.path as string,
+            mode: oldTreeFile.mode as string,
+            type: oldTreeFile.type as string,
+            sha: newBlobData.sha,
+        });
+    }));
+    // We are creating the commit in the parent repo, so we need to create the tree in the parent repo
     const { data: newTree } = await octokit.rest.git.createTree({
-        owner: "ethereum", // TODO: Don't hardcode
-        repo: "EIPs", // TODO: Don't hardcode
+        owner: parentOwner,
+        repo: parentRepo,
         tree,
+        base_tree: undefined, // Since we are deleting files, we can't set a base tree
     });
     const message = `Commit from EIP-Bot`;
-    const newCommit = (await octokit.rest.git.createCommit({
-        owner: "ethereum", // TODO: Don't hardcode
-        repo: "EIPs", // TODO: Don't hardcode
+    const { data: newCommit } = await octokit.rest.git.createCommit({
+        owner: parentOwner,
+        repo: parentRepo,
         message,
         tree: newTree.sha,
         parents: [currentCommit.commitSha],
-    })).data;
-    await octokit.rest.git.updateRef({
-        owner,
-        repo,
-        ref,
+    });
+
+    // Workaround. What we want to do is:
+    //await octokit.rest.git.updateRef({
+    //    owner,
+    //    repo,
+    //    ref,
+    //    sha: newCommit.sha,
+    //});
+    // However, GitHub's API is broken and doesn't allow us to update the ref. So we have to modify the PR another way.
+    // We do this by making a new branch on the ethereum/EIPs repo, then we set the PR to merge into that branch.
+    // Then, we merge changes from the ethereum/EIPs repo into the PR branch.
+    // We then set the PR to merge into the default branch, and delete the temporary branch.
+    // This is a bit hacky, but it works.
+    let tempBranchName = `eipbot/${pull_request.number}`;
+    let { data: { default_branch: defaultBranch }} = await octokit.rest.repos.get({
+        owner: parentOwner,
+        repo: parentRepo,
+    });
+    try {
+        await octokit.rest.git.getRef({ // Will give 404 if doesn't exist
+            owner: parentOwner,
+            repo: parentRepo,
+            ref: `heads/${tempBranchName}`,
+        });
+        await octokit.rest.git.deleteRef({ // Delete ref if it does
+            owner: parentOwner,
+            repo: parentRepo,
+            ref: `heads/${tempBranchName}`,
+        });
+    } catch (e: any) {
+        if (e.status != 404) throw e;
+    }
+    await octokit.rest.git.createRef({
+        owner: parentOwner,
+        repo: parentRepo,
+        ref: `refs/heads/${tempBranchName}`,
         sha: newCommit.sha,
     });
+    // The PR doesn't recognize the commit right away. Wait 5 seconds.
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    try {
+        await octokit.rest.pulls.update({
+            owner: parentOwner,
+            repo: parentRepo,
+            pull_number: pull_request.number,
+            base: tempBranchName,
+        });
+        await octokit.rest.pulls.updateBranch({
+            owner: parentOwner,
+            repo: parentRepo,
+            pull_number: pull_request.number
+        });
+    } finally {
+        await octokit.rest.pulls.update({
+            owner: parentOwner,
+            repo: parentRepo,
+            pull_number: pull_request.number,
+            base: defaultBranch,
+        });
+        //await octokit.rest.git.deleteRef({
+        //    owner: parentOwner,
+        //    repo: parentRepo,
+        //    ref: `heads/${tempBranchName}`,
+        //});
+    }
 }
 
 export async function preMergeChanges(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[], isMerging: boolean = false) {
@@ -174,7 +287,47 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
             }
 
             // Now, regenerate markdown from front matter
-            file.contents = `---\n${yaml.dump(frontmatter, ).trim().replaceAll('T00:00:00.000Z', '')}\n---\n\n${fileData.body}`;
+            let newYaml = yaml.dump(frontmatter, {
+                // Ensure preamble is in the right order
+                sortKeys: function (a, b) {
+                    let preambleOrder = [
+                        "eip",
+                        "title",
+                        "description",
+                        "author",
+                        "discussions-to",
+                        "status",
+                        "last-call-deadline",
+                        "type",
+                        "category",
+                        "created",
+                        "requires",
+                        "withdrawal-reason"
+                    ];
+                    return preambleOrder.indexOf(a) - preambleOrder.indexOf(b);
+                },
+                // Ensure that dates and integers are not turned into strings
+                replacer: function (key, value) {
+                    if (key == 'eip') {
+                        return parseInt(value); // Ensure that it's an integer
+                    }
+                    if (key == 'requires' && typeof value == 'string' && !value.includes(",")) {
+                        return parseInt(value); // Ensure that non-list requires aren't transformed into strings
+                    }
+                    if (key == 'created' || key == 'last-call-deadline') {
+                        return new Date(value); // Ensure that it's a date object
+                    }
+                    return value;
+                },
+                // Generic options
+                lineWidth: -1, // No max line width for preamble
+                noRefs: true, // Disable YAML references
+            });
+            newYaml = newYaml.trim(); // Get rid of excess whitespace
+            newYaml = newYaml.replaceAll('T00:00:00.000Z', ''); // Mandated date formatting by EIP-1
+            
+            // Regenerate file contents
+            file.contents = `---\n${newYaml}\n---\n\n${fileData.body}`;
             
             // Push
             newFiles.push(file);

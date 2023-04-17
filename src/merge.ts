@@ -59,6 +59,7 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
 }
 
 async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
+    return;
     let owner = pull_request.head.repo?.owner?.login as string;
     let repo = pull_request.head.repo?.name as string;
     let parentOwner = pull_request.base.repo?.owner?.login as string;

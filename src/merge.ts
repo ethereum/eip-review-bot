@@ -242,11 +242,11 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             pull_number: pull_request.number,
             base: defaultBranch,
         });
-        //await octokit.rest.git.deleteRef({
-        //    owner: parentOwner,
-        //    repo: parentRepo,
-        //    ref: `heads/${tempBranchName}`,
-        //});
+        await octokit.rest.git.deleteRef({
+            owner: parentOwner,
+            repo: parentRepo,
+            ref: `heads/${tempBranchName}`,
+        });
     }
 }
 
@@ -326,7 +326,7 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
                 },
                 // Ensure that dates and integers are not turned into strings
                 replacer: function (key, value) {
-                    if (key == 'eip') {
+                    if (key == 'eip' && Number.isInteger(value)) {
                         return parseInt(value); // Ensure that it's an integer
                     }
                     if (key == 'requires' && typeof value == 'string' && !value.includes(",")) {

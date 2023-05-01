@@ -59,7 +59,6 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
 }
 
 async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
-    return;
     let owner = pull_request.head.repo?.owner?.login as string;
     let repo = pull_request.head.repo?.name as string;
     let parentOwner = pull_request.base.repo?.owner?.login as string;
@@ -204,8 +203,6 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         ref: `refs/heads/${tempBranchName}`,
         sha: newCommit.sha,
     });
-    // The PR doesn't recognize the commit right away. Wait 5 seconds.
-    await new Promise(resolve => setTimeout(resolve, 5000));
     try {
         await octokit.rest.pulls.update({
             owner: parentOwner,
@@ -213,6 +210,8 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             pull_number: pull_request.number,
             base: tempBranchName,
         });
+        // The PR doesn't recognize the commit right away. Wait 5 seconds.
+        await new Promise(resolve => setTimeout(resolve, 5000));
         await octokit.rest.pulls.updateBranch({
             owner: parentOwner,
             repo: parentRepo,

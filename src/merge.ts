@@ -150,6 +150,30 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             sha: newBlobData.sha,
         });
     }));
+    // If the last commit was a merge commit, then we're good and can use its parent
+    let { data: { default_branch: defaultBranch }} = await octokit.rest.repos.get({
+        owner: parentOwner,
+        repo: parentRepo,
+    });
+    let parents: string[];
+    if (commitData.parents.length > 1) {
+        parents = [commitData.parents[0].sha];
+    } else {
+        // We need to create a new commit
+        await octokit.rest.pulls.update({
+            owner: parentOwner,
+            repo: parentRepo,
+            pull_number: pull_request.number,
+            base: defaultBranch,
+        });
+        await octokit.rest.pulls.updateBranch({
+            owner: parentOwner,
+            repo: parentRepo,
+            pull_number: pull_request.number,
+        });
+        // Now use the current commit as the parent
+        parents = [commitSha];
+    }
     // We are creating the commit in the parent repo, so we need to create the tree in the parent repo
     const { data: newTree } = await octokit.rest.git.createTree({
         owner: parentOwner,
@@ -163,7 +187,7 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         repo: parentRepo,
         message,
         tree: newTree.sha,
-        parents: [currentCommit.commitSha],
+        parents,
     });
 
     // Workaround. What we want to do is:
@@ -179,10 +203,6 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     // We then set the PR to merge into the default branch, and delete the temporary branch.
     // This is a bit hacky, but it works.
     let tempBranchName = `eipbot/${pull_request.number}`;
-    let { data: { default_branch: defaultBranch }} = await octokit.rest.repos.get({
-        owner: parentOwner,
-        repo: parentRepo,
-    });
     try {
         await octokit.rest.git.getRef({ // Will give 404 if doesn't exist
             owner: parentOwner,
@@ -210,8 +230,6 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             pull_number: pull_request.number,
             base: tempBranchName,
         });
-        // The PR doesn't recognize the commit right away. Wait 5 seconds.
-        await new Promise(resolve => setTimeout(resolve, 5000));
         await octokit.rest.pulls.updateBranch({
             owner: parentOwner,
             repo: parentRepo,

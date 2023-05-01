@@ -273,11 +273,12 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
             // Check if EIP number needs setting
             let eip = await generateEIPNumber(octokit, repository, frontmatter, file, isMerging);
 
+            let oldEip = frontmatter.eip;
             frontmatter.eip = `${eip}`;
             let oldFilename = file.filename;
             file.filename = `EIPS/eip-${eip}.md`;
             
-            if (oldFilename != file.filename) {
+            if (oldFilename != file.filename || oldEip != eip) {
                 anyFilesChanged = true;
                 oldEipToNewEip[oldFilename.split("-")?.[1]] = file.filename;
 

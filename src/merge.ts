@@ -70,17 +70,18 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
     let parentRepo = pull_request.base.repo?.name as string;
     let ref = `heads/${pull_request.head.ref as string}`;
 
-    // Delete all deleted files
-    for (let file of oldFiles) {
-        let removed = !newFiles.find(f => f.filename == file.filename);
-        if (removed) {
-            // Generate old file sha using blob API
-            let oldContent = file.contents as string;
-            await octokit.rest.repos.deleteFile({
+    // Update all changed files
+    for (let file of newFiles) {
+        let changed = !!oldFiles.find(f => f.filename == file.filename && f.contents != file.contents);
+        if (changed) {
+            let content = file.contents as string;
+            let oldContent = oldFiles.find(f => f.filename == file.filename)?.contents as string;
+            await octokit.rest.repos.createOrUpdateFileContents({
                 owner: owner,
                 repo: repo,
                 path: file.filename,
-                message: `Delete ${file.filename}`,
+                message: `Update ${file.filename}`,
+                content,
                 sha: getGitBlobSha(oldContent),
                 branch: ref
             });
@@ -101,18 +102,17 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
             });
         }
     }
-    // Update all changed files
-    for (let file of newFiles) {
-        let changed = !!oldFiles.find(f => f.filename == file.filename && f.contents != file.contents);
-        if (changed) {
-            let content = file.contents as string;
-            let oldContent = oldFiles.find(f => f.filename == file.filename)?.contents as string;
-            await octokit.rest.repos.createOrUpdateFileContents({
+    // Delete all deleted files
+    for (let file of oldFiles) {
+        let removed = !newFiles.find(f => f.filename == file.filename);
+        if (removed) {
+            // Generate old file sha using blob API
+            let oldContent = file.contents as string;
+            await octokit.rest.repos.deleteFile({
                 owner: owner,
                 repo: repo,
                 path: file.filename,
-                message: `Update ${file.filename}`,
-                content,
+                message: `Delete ${file.filename}`,
                 sha: getGitBlobSha(oldContent),
                 branch: ref
             });

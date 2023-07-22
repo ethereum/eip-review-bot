@@ -11,7 +11,7 @@ export default async function (_octokit: Octokit, _config: Config, files: File[]
         let frontMatter = fm<FrontMatter>((file.previous_contents || file.contents) as string);
 
         if (file.status.toLowerCase() != 'added' && frontMatter.attributes?.status?.toLowerCase() != "living") { // Living EIPs should only need editor approval
-            let reviewers = frontMatter.attributes.author?.match(/(?<=(?:^|,)[^<(]+\(@)(.*?)(?=\)\s*(<(("[^"]+")|(\w+)@[\w.]+)>)?(?:$|,))/g) || [];
+            let reviewers = frontMatter.attributes.author?.match(/(?<=(?:^|,)[^<(]+\(@)(.*?)(?=\)\s*(<(("[^"]+")|([\w.]+)@[\w.]+)>)?(?:$|,))/g) || [];
             if (reviewers.length > 0) {
                 return [{
                     name: "authors",

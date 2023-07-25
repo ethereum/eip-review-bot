@@ -264,6 +264,9 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     // Make pre-merge changes
     await preMergeChanges(octokit, _, repository, pull_number, files, true);
 
+    // If draft PR, return
+    if (pull_request.draft) return;
+
     // Enable auto merge
     // Need to use GraphQL API to enable auto merge
     // https://docs.github.com/en/graphql/reference/mutations#enablepullrequestautomerge

@@ -45,6 +45,6 @@
     "typescript": "^5.0.2",
     "wrappy": "^1.0.2",
     "yaml": "^2.2.1",
-    "nodegit": "^0.27.0"
+    "isomorphic-git": "^1.24.5"
   }
 }

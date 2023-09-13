@@ -13,11 +13,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
-      
-      - name: Setup
-        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+
+      - uses: oven-sh/setup-bun@a1800f471a0bc25cddac36bb13e6f436ddf341d7 # v1
         with:
-          node-version: 18.x
+          bun-version: 1.0.1
 
       - name: Cache node_modules
         id: cache-npm-packages
@@ -26,20 +25,14 @@ jobs:
           cache-name: cache-node_modules
         with:
           path: node_modules
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
-
-      - name: Install apt packages
-        if: ${{ steps.cache-npm-packages.outputs.cache-hit != 'true' }}
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libkrb5-dev
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('bun.lockb') }}
 
       - name: Install Dependencies
         if: ${{ steps.cache-npm-packages.outputs.cache-hit != 'true' }}
-        run: npm ci
+        run: bun install
 
       - name: Build
-        run: npm run build
+        run: bun run build
 
       - name: Commit & Push changes
         uses: actions-js/push@156f2b10c3aa000c44dbe75ea7018f32ae999772

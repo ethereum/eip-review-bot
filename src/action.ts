@@ -5,13 +5,17 @@ import { throttling } from "@octokit/plugin-throttling";
 import { parse } from 'yaml';
 import { PullRequestEvent, Repository, PullRequest } from "@octokit/webhooks-types";
 import processFiles from './process.js';
-import { RuleProcessed } from './types.js';
+import { RuleProcessed, File } from './types.js';
 import { performMergeAction, preMergeChanges } from './merge.js';
+import git from 'isomorphic-git';
+import fs from 'fs/promises';
+import http from 'isomorphic-git/http/node';
 
 const unknown = "<unknown>";
-const ThrottledOctokit = GitHub.plugin(throttling);
+
 // Initialize GitHub API
 const GITHUB_TOKEN = core.getInput('token');
+const ThrottledOctokit = GitHub.plugin(throttling);
 const octokit = new ThrottledOctokit(getOctokitOptions(GITHUB_TOKEN, { throttle: {
     onRateLimit: (retryAfter: number, options: any) => {
         core.warning(`Request quota exhausted for request ${options?.method || unknown} ${options?.url || unknown}`);
@@ -42,6 +46,7 @@ async function run() {
             process.exit(4);
         }
         pull_request = pull_request_response.data as PullRequest;
+        pull_request.number = pull_number; // To make sure there is DEFINITELY a pull_number
     } else {
         core.info("Detected pull_request_target configuration. Using GitHub-provided data.");
     }
@@ -93,31 +98,177 @@ async function run() {
             process.exit(5);
         }
 
-        // Pull and parse config file from EIPs repository (NOT PR HEAD)
-        const response = await octokit.rest.repos.getContent({
-            owner: repository.owner.login,
-            repo: repository.name,
-            path: core.getInput('config') || 'eip-editors.yml'
+        
+        // Clone the repository into a temporary directory
+        core.info("Cloning repository and fetching required data...");
+        const cloneDir = await fs.mkdtemp("eip-review-bot-");
+        core.info(`Cloning into ${cloneDir}`);
+        await git.clone({
+            fs,
+            http,
+            dir: cloneDir,
+            url: repository.clone_url,
+            singleBranch: true,
+            depth: -1,
+            ref: repository.default_branch,
         });
-        if (response.status !== 200) {
+        // Add remotes
+        await git.addRemote({
+            fs,
+            dir: cloneDir,
+            remote: "main",
+            url: repository.clone_url
+        });
+        await git.addRemote({
+            fs,
+            dir: cloneDir,
+            remote: "pr",
+            url: pull_request.head.repo?.clone_url || repository.clone_url
+        });
+        // Branch config (rename main branch to "main" and fetch PR branch to "pr")
+        await git.renameBranch({
+            fs,
+            dir: cloneDir,
+            oldref: repository.default_branch,
+            ref: "main"
+        });
+        await git.fetch({
+            fs,
+            http,
+            dir: cloneDir,
+            remote: "pr",
+            singleBranch: true,
+            ref: "pr",
+            remoteRef: pull_request.head.ref,
+            depth: -1
+        });
+
+        // Get info that we need for later
+        const mainBranchCommitOid = await git.resolveRef({ fs, dir: cloneDir, ref: 'main' });
+        const prBranchCommitOid = await git.resolveRef({ fs, dir: cloneDir, ref: 'pr' });
+        const { commit: mainBranchCommit } = await git.readCommit({ fs, dir: cloneDir, oid: mainBranchCommitOid });
+        const { tree: mainBranchTree } = await git.readTree({ fs, dir: cloneDir, oid: mainBranchCommit.tree });
+        const prBranchWalker = git.TREE({ ref: prBranchCommitOid });
+
+        // Find most recent common ancestor between main and pr branches by walking back the commit tree
+        let mainBranchCommitHistorySet = new Set<string>();
+        let prBranchCommitHistorySet = new Set<string>();
+        let lastMainBranchCommitOid = mainBranchCommitOid;
+        let lastPrBranchCommitOid = prBranchCommitOid;
+        while (!(lastMainBranchCommitOid in prBranchCommitHistorySet || lastPrBranchCommitOid in mainBranchCommitHistorySet)) {
+            // Add current commit to history sets
+            mainBranchCommitHistorySet.add(lastMainBranchCommitOid);
+            prBranchCommitHistorySet.add(lastPrBranchCommitOid);
+
+            // Get parents of last commits
+            let { commit: lastMainBranchCommit } = await git.readCommit({ fs, dir: cloneDir, oid: lastMainBranchCommitOid });
+            let { commit: lastPrBranchCommit } = await git.readCommit({ fs, dir: cloneDir, oid: lastPrBranchCommitOid });
+
+            // If both commits have no parents, we've reached the end of the commit tree and there is no common ancestor
+            if (lastMainBranchCommit.parent.length == 0 && lastPrBranchCommit.parent.length == 0) {
+                core.setFailed("No common ancestor between main and pr branches");
+                process.exit(1);
+            }
+
+            // If either branch has parents, set the last commit to the first parent
+            if (lastMainBranchCommit.parent.length > 0) {
+                lastMainBranchCommitOid = lastMainBranchCommit.parent[0];
+            }
+            if (lastPrBranchCommit.parent.length > 0) {
+                lastPrBranchCommitOid = lastPrBranchCommit.parent[0];
+            }
+        }
+        // Fetch the common ancestor commit and its data
+        const commonAncestorCommitOid = lastMainBranchCommitOid in prBranchCommitHistorySet ? lastMainBranchCommitOid : lastPrBranchCommitOid;
+        const commonAncestorWalker = git.TREE({ ref: commonAncestorCommitOid });
+
+        // Pull and parse config file ('eip-editors.yml') from main branch of main repository using only isomorphic-git (no fs)
+        let config = undefined as { [key: string]: string[]; } | undefined;
+        try {
+            const configFilePath = core.getInput('config') || 'eip-editors.yml';
+            const configFileOid = [...mainBranchTree.values()].find(value => value.path == configFilePath)?.oid;
+            if (!configFileOid) {
+                previous_comment = (await octokit.rest.issues.updateComment({
+                    owner: repository.owner.login,
+                    repo: repository.name,
+                    comment_id: previous_comment.id,
+                    body: `❌ Could not find config file at \`${configFilePath}\`. Please ensure that the config file exists in the repository.`
+                })).data;
+                core.setFailed(`Could not find file "${configFilePath}"`);
+                process.exit(3);
+            }
+            const configBlob = await git.readBlob({ fs, dir: cloneDir, oid: configFileOid });
+            config = parse(configBlob.toString()) as { [key: string]: string[]; };
+            core.info(`Raw config object: ${JSON.stringify(config, null, 2)}`);
+        } catch (e) {
             previous_comment = (await octokit.rest.issues.updateComment({
                 owner: repository.owner.login,
                 repo: repository.name,
                 comment_id: previous_comment.id,
-                body: `❌ Could not find config file at \`${core.getInput('config') || 'eip-editors.yml'}\`. Please ensure that the config file exists in the repository.`
+                body: `❌ Could not parse config file. Please ensure that the config file is valid YAML.`
             })).data;
-            core.setFailed(`Could not find file "${core.getInput('config') || 'eip-editors.yml'}"`);
+            core.setFailed(`Could not parse config file`);
             process.exit(3);
         }
-        let response_data = response.data as { content: string; };
-        const config = parse(Buffer.from(response_data.content, "base64").toString("utf8")) as { [key: string]: string[]; };
+        if (!config) {
+            previous_comment = (await octokit.rest.issues.updateComment({
+                owner: repository.owner.login,
+                repo: repository.name,
+                comment_id: previous_comment.id,
+                body: `❌ Could not parse config file. Please ensure that the config file is valid YAML.`
+            })).data;
+            core.setFailed(`Could not parse config file`);
+            process.exit(3);
+        }
+        config = config as { [key: string]: string[]; };
 
-        // Process files
-        const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
-            owner: repository.owner.login,
-            repo: repository.name,
-            pull_number
-        });
+        // Get diff between common ancestor and pr branch trees
+        const textDecoder = new TextDecoder();
+        const files = (await git.walk({
+            fs,
+            dir: cloneDir,
+            trees: [commonAncestorWalker, prBranchWalker],
+            map: async function(filepath, [commonAncestorEntry, prBranchEntry]): Promise<File | undefined> {
+                if (prBranchEntry == null && commonAncestorEntry == null) {
+                    return undefined;
+                }
+                if (commonAncestorEntry == null) {
+                    // File was added
+                    const contentRaw = await prBranchEntry?.content() || new Uint8Array();
+                    return {
+                        sha: await prBranchEntry?.oid(),
+                        status: "added",
+                        filename: filepath,
+                        previous_filename: undefined,
+                        contents: textDecoder.decode(contentRaw),
+                        previous_contents: undefined
+                    };
+                } else if (prBranchEntry == null) {
+                    // File was removed
+                    const contentRaw = await commonAncestorEntry?.content() || new Uint8Array();
+                    return {
+                        sha: await commonAncestorEntry?.oid(),
+                        status: "removed",
+                        filename: filepath,
+                        previous_filename: undefined,
+                        contents: undefined,
+                        previous_contents: textDecoder.decode(contentRaw)
+                    };
+                } else {
+                    // File was modified
+                    const contentRaw = await prBranchEntry?.content() || new Uint8Array();
+                    const previous_contentRaw = await commonAncestorEntry?.content() || new Uint8Array();
+                    return {
+                        sha: await prBranchEntry?.oid(),
+                        status: "modified",
+                        filename: filepath,
+                        previous_filename: filepath,
+                        contents: textDecoder.decode(contentRaw),
+                        previous_contents: textDecoder.decode(previous_contentRaw)
+                    };
+                }
+            }
+        }) as (File | undefined)[]).filter(file => file != undefined) as File[];
 
         // Get rule results
         let result = (await processFiles(octokit, config, files)).map((ruleog): RuleProcessed => {
@@ -308,13 +459,13 @@ async function run() {
         }
 
         if (!wholePassed) {
-            await preMergeChanges(octokit, config, repository, pull_number, files, false); // Even if we don't merge, we still want to update PRs where possible
+            await preMergeChanges(octokit, config, repository, pull_request, files, false); // Even if we don't merge, we still want to update PRs where possible
             core.setFailed('Not all reviewers have approved the pull request');
             process.exit(100);
         } else {
             core.info("Auto merging...");
             try {
-                await performMergeAction(octokit, config, repository, pull_number, files);
+                await performMergeAction(octokit, config, repository, pull_request, files);
             } catch (e: any) {
                 previous_comment = (await octokit.rest.issues.updateComment({
                     owner: repository.owner.login,

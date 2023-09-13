@@ -1,29 +1,29 @@
-import type { Octokit, Config, File } from "./types";
-import type { Repository } from "@octokit/webhooks-types";
+import type { File } from "./types";
+import type { PullRequest } from "@octokit/webhooks-types";
 import type { FrontMatter } from "./types";
 import localConfig from "./localConfig";
 import fm from "front-matter";
 
-export async function generatePRTitle(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[]) {
+export async function generatePRTitle(pull_request: PullRequest, files: File[]) {
     // Get PR title, ignoring the prefix before the first colon
-    let { title, user } = (await octokit.rest.pulls.get({
-        owner: repository.owner.login,
-        repo: repository.name,
-        pull_number: pull_number
-    })).data;
+    let { title, user } = pull_request;
 
     // Ignore PRs from Renovate
     if (user?.login == "renovate[bot]") {
         return title;
     }
     
+    let beginnningPortion;
     if (title.match(":")) {
+        beginnningPortion = title.split(":")[0].trim();
         title = title.split(":").slice(1).join(":").trim();
     }
-    
 
-    // If the PR modifies the website, use Website prefix
-    if (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".vue") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-") || file.filename.startsWith(".vitepress")))) {
+    // If the PR modifies the website, use Website prefix unless the beginning portion is for EIP-1
+    if (
+        (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".js") || file.filename.endsWith(".css") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-")))) &&
+        (!beginnningPortion || !beginnningPortion.toLowerCase().endsWith("eip-1"))
+    ) {
         return localConfig.title.websitePrefix + title;
     }
     
@@ -63,9 +63,9 @@ export async function generatePRTitle(octokit: Octokit, _: Config, repository: R
     }
 
     // If the PR updates an existing EIP's status, use Update EIP prefix and custom title
-    if (files.some(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))) {
-        let eipNumber = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
-        let newStatus = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.patch?.includes("+status:"))?.patch?.match(/(?<=\+status:\W?)\w[^\r\n]*/g)?.[0] as string;
+    if (files.some(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0] != file.previous_contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0])) {
+        let eipNumber = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified")?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
+        let newStatus = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0] != file.previous_contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0])?.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0];
         return localConfig.title.updateEipPrefix.replace("XXXX", eipNumber) + `Move to ${newStatus}`;
     }
 

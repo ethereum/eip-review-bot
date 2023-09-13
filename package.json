@@ -25,8 +25,8 @@
   },
   "dependencies": {
     "@octokit/fixtures": "^22.0.6",
-    "@octokit/plugin-throttling": "^6.0.0",
-    "@octokit/rest": "^19.0.7",
+    "@octokit/plugin-throttling": "^7.0.0",
+    "@octokit/rest": "^20.0.0",
     "@octokit/webhooks-types": "^7.0.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.5",

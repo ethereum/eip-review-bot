@@ -1,7 +1,7 @@
 import type { File } from "../types";
-import { mockOctokit, mockEIPsRepo } from "./generateMockOctokit";
 import { generatePRTitle } from "../namePr";
 import localConfig from "../localConfig";
+import { PullRequest, User } from "@octokit/webhooks-types";
 
 describe("namePR", () => {
     it("Correctly Names Simulated PR-1: Modifies EIP-1", async () => {
@@ -11,7 +11,12 @@ describe("namePR", () => {
             contents: "---\ntitle: EIP Rules And Guidelines\nstatus: Living\n---\n## Testing1",
             previous_contents: "---\ntitle: EIP Rules And Guidelines\nstatus: Living\n---\n## Testing2"
         }] as File[];
-        const prTitle = await generatePRTitle(mockOctokit, {} as any, mockEIPsRepo, 1, files);
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (EIP-1)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("XXXX", "1")}PR Title Testing 123 (EIP-1)`);
     });
     it("Correctly Names Simulated PR-2: Modifies CI", async () => {
@@ -21,7 +26,12 @@ describe("namePR", () => {
             contents: "ci: old",
             previous_contents: "ci: new"
         }] as File[];
-        const prTitle = await generatePRTitle(mockOctokit, {} as any, mockEIPsRepo, 2, files);
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (.github/workflows)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.ciPrefix}PR Title Testing 123 (.github/workflows)`);
     });
     it("Correctly Names Simulated PR-3: Modifies config", async () => {
@@ -31,7 +41,12 @@ describe("namePR", () => {
             contents: "config: old",
             previous_contents: "config: new"
         }] as File[];
-        const prTitle = await generatePRTitle(mockOctokit, {} as any, mockEIPsRepo, 3, files);
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (config)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.configPrefix}PR Title Testing 123 (config)`);
     });
     it("Correctly Names Simulated PR-4: Modifies .github", async () => {
@@ -41,7 +56,12 @@ describe("namePR", () => {
             contents: "github: old",
             previous_contents: "github: new"
         }] as File[];
-        const prTitle = await generatePRTitle(mockOctokit, {} as any, mockEIPsRepo, 4, files);
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (.github)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.configPrefix}PR Title Testing 123 (.github)`);
     });
     it("Correctly Names Simulated PR-5: Modifies EIP Template", async () => {
@@ -51,7 +71,12 @@ describe("namePR", () => {
             contents: "---\ntitle: EIP Template\n---\n## Testing1",
             previous_contents: "---\ntitle: EIP Template\n---\n## Testing2",
         }] as File[];
-        const prTitle = await generatePRTitle(mockOctokit, {} as any, mockEIPsRepo, 5, files);
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (EIP Template)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP-XXXX", "Template")}PR Title Testing 123 (EIP Template)`);
     });
     it("Correctly Names Simulated PR-6: Modifies EIP README", async () => {
@@ -61,7 +86,12 @@ describe("namePR", () => {
             contents: "## Testing1",
             previous_contents: "## Testing2",
         }] as File[];
-        const prTitle = await generatePRTitle(mockOctokit, {} as any, mockEIPsRepo, 6, files);
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (EIP README)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP-XXXX", "README")}PR Title Testing 123 (EIP README)`);
     });
     it("Correctly Names Simulated PR-7: Adds New EIP", async () => {
@@ -70,7 +100,12 @@ describe("namePR", () => {
             status: "added",
             contents: "---\ntitle: Testing New EIP\n---\n## Testing1",
         }] as File[];
-        const prTitle = await generatePRTitle(mockOctokit, {} as any, mockEIPsRepo, 7, files);
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (EIP README)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.addEipPrefix}Testing New EIP`);
     });
     it("Correctly Names Simulated PR-8: Updates EIP Status", async () => {
@@ -80,8 +115,13 @@ describe("namePR", () => {
             contents: "---\ntitle: Testing New EIP\nstatus: Final\n---\n## Testing1",
             previous_contents: "---\ntitle: Testing New EIP\nstatus: Living\n---\n## Testing2",
         }] as File[];
-        const prTitle = await generatePRTitle(mockOctokit, {} as any, mockEIPsRepo, 8, files);
-        expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("XXXX", "9999")}PR Title Testing 123 (Status Change EIP-9999)`);
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (Status Change EIP-9999)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
+        expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("XXXX", "9999")}Move to Final`);
     });
     it("Correctly Names Simulated PR-9: Updates Existing EIP", async () => {
         let files = [{
@@ -90,7 +130,12 @@ describe("namePR", () => {
             contents: "---\ntitle: Testing New EIP\n---\n## Testing1",
             previous_contents: "---\ntitle: Testing New EIP\n---\n## Testing2",
         }] as File[];
-        const prTitle = await generatePRTitle(mockOctokit, {} as any, mockEIPsRepo, 9, files);
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (Update EIP-9999)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("XXXX", "9999")}PR Title Testing 123 (Update EIP-9999)`);
     });
     it("Correctly Names Simulated PR-12: Modifies Website", async () => {
@@ -100,7 +145,12 @@ describe("namePR", () => {
             contents: "## Testing1",
             previous_contents: "## Testing2",
         }] as File[];
-        const prTitle = await generatePRTitle(mockOctokit, {} as any, mockEIPsRepo, 12, files);
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (Update Website)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.websitePrefix}PR Title Testing 123 (Update Website)`);
     });
 });

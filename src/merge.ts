@@ -5,6 +5,8 @@ import yaml from 'js-yaml';
 import { PullRequest } from '@octokit/webhooks-types';
 import crypto from 'crypto';
 
+import { generatePRTitle } from './namePr';
+
 function getGitBlobSha(content: string) {
     return crypto.createHash('sha1').update(`blob ${content.length}\0${content}`).digest('hex');
 }
@@ -125,16 +127,12 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
         repo: parentRepo,
         pull_number: pull_request.number
     });
+
+    // Return
+    return pull_request;
 }
 
-export async function preMergeChanges(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[], isMerging: boolean = false) {
-    // Fetch PR data
-    let pull_request = (await octokit.rest.pulls.get({
-        owner: repository.owner.login,
-        repo: repository.name,
-        pull_number: pull_number
-    })).data;
-
+export async function preMergeChanges(octokit: Octokit, _: Config, repository: Repository, pull_request: PullRequest, files: File[], isMerging: boolean = false) {
     // Modify EIP data when needed
     let anyFilesChanged = false;
     let newFiles = [];
@@ -247,22 +245,30 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
     }
 
     // Push changes
-    if (anyFilesChanged) {
-        await updateFiles(octokit, pull_request as PullRequest, files, newFiles);
+    // TODO: DISABLED FOR NOW
+    /*if (anyFilesChanged) {
+        pull_request = await updateFiles(octokit, pull_request as PullRequest, files, newFiles);
+    }*/
+
+    // Update PR title
+    let newPRTitle = await generatePRTitle(pull_request, newFiles);
+    if (newPRTitle && newPRTitle != pull_request?.title) {
+        await octokit.rest.pulls.update({
+            owner: repository.owner.login,
+            repo: repository.name,
+            pull_number: pull_request.number,
+            title: newPRTitle
+        });
+        pull_request.title = newPRTitle;
     }
+
+    // Return
+    return pull_request;
 }
 
-export async function performMergeAction(octokit: Octokit, _: Config, repository: Repository, pull_number: number, files: File[]) {
-    // Fetch PR data
-    let pull_request = (await octokit.rest.pulls.get({
-        owner: repository.owner.login,
-        repo: repository.name,
-        pull_number: pull_number
-    })).data;
-    const title = pull_request.title;
-    
+export async function performMergeAction(octokit: Octokit, _: Config, repository: Repository, pull_request: PullRequest, files: File[]) {
     // Make pre-merge changes
-    await preMergeChanges(octokit, _, repository, pull_number, files, true);
+    pull_request = await preMergeChanges(octokit, _, repository, pull_request, files, true);
 
     // If draft PR, return
     if (pull_request.draft) return;
@@ -281,7 +287,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
         }`, {
             owner: repository.owner.login,
             repo: repository.name,
-            pullRequestNumber: pull_number
+            pullRequestNumber: pull_request.number
         }
     ) as any;
     await octokit.graphql(
@@ -308,7 +314,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
             }
         }`, {
             pullRequestId: response.repository.pullRequest.id,
-            commitHeadline: title,
+            commitHeadline: pull_request.title,
             commitBody: `Merged by EIP-Bot.`,
             mergeMethod: "SQUASH"
         }
@@ -318,7 +324,7 @@ export async function performMergeAction(octokit: Octokit, _: Config, repository
     await octokit.rest.pulls.createReview({
         owner: repository.owner.login,
         repo: repository.name,
-        pull_number: pull_number,
+        pull_number: pull_request.number,
         event: "APPROVE",
         body: "All Reviewers Have Approved; Performing Automatic Merge..."
     });

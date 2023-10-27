@@ -2,15 +2,8 @@ import core from "@actions/core";
 
 export declare type File = {
     sha?: string;
-    filename: string;
     status: "removed" | "modified" | "renamed" | "added" | "copied" | "changed" | "unchanged";
-    additions?: number; 
-    deletions?: number;
-    changes?: number;
-    blob_url?: string;
-    raw_url?: string;
-    contents_url?: string;
-    patch?: string | undefined;
+    filename: string;
     previous_filename?: string | undefined;
     contents?: string | undefined;
     previous_contents?: string | undefined;

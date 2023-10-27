@@ -3,7 +3,7 @@ import { Octokit, Config, File, Rule } from "../types.js";
 export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results
     let res : Rule[][] = await Promise.all(files.map(async file => {
-        if (file.filename.startsWith("EIPS/") || file.filename.startsWith("ERCS/") || file.filename.startsWith("assets/eip-") || file.filename.startsWith("assets/erc-")) return []; // All of those cases are handled by the other rules
+        if (file.filename.startsWith("EIPS/eip-") || file.filename.startsWith("ERCS/erc-") || file.filename.startsWith("assets/eip-") || file.filename.startsWith("assets/erc-")) return []; // All of those cases are handled by the other rules
 
         return [{
             name: "unknown",

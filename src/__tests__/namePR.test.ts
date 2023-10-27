@@ -19,6 +19,7 @@ describe("namePR", () => {
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("XXXX", "1")}PR Title Testing 123 (EIP-1)`);
     });
+
     it("Correctly Names Simulated PR-2: Modifies CI", async () => {
         let files = [{
             filename: ".github/workflows/testing.yml",
@@ -34,6 +35,7 @@ describe("namePR", () => {
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.ciPrefix}PR Title Testing 123 (.github/workflows)`);
     });
+
     it("Correctly Names Simulated PR-3: Modifies config", async () => {
         let files = [{
             filename: "config/testing.yml",
@@ -49,6 +51,7 @@ describe("namePR", () => {
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.configPrefix}PR Title Testing 123 (config)`);
     });
+
     it("Correctly Names Simulated PR-4: Modifies .github", async () => {
         let files = [{
             filename: ".github/testing.yml",
@@ -64,6 +67,7 @@ describe("namePR", () => {
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.configPrefix}PR Title Testing 123 (.github)`);
     });
+
     it("Correctly Names Simulated PR-5: Modifies EIP Template", async () => {
         let files = [{
             filename: "eip-template.md",
@@ -79,6 +83,7 @@ describe("namePR", () => {
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP-XXXX", "Template")}PR Title Testing 123 (EIP Template)`);
     });
+
     it("Correctly Names Simulated PR-6: Modifies EIP README", async () => {
         let files = [{
             filename: "README.md",
@@ -94,6 +99,7 @@ describe("namePR", () => {
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP-XXXX", "README")}PR Title Testing 123 (EIP README)`);
     });
+
     it("Correctly Names Simulated PR-7: Adds New EIP", async () => {
         let files = [{
             filename: "EIPS/eip-9999.md",
@@ -108,6 +114,7 @@ describe("namePR", () => {
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.addEipPrefix}Testing New EIP`);
     });
+
     it("Correctly Names Simulated PR-8: Updates EIP Status", async () => {
         let files = [{
             filename: "EIPS/eip-9999.md",
@@ -123,6 +130,7 @@ describe("namePR", () => {
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("XXXX", "9999")}Move to Final`);
     });
+
     it("Correctly Names Simulated PR-9: Updates Existing EIP", async () => {
         let files = [{
             filename: "EIPS/eip-9999.md",
@@ -138,6 +146,7 @@ describe("namePR", () => {
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("XXXX", "9999")}PR Title Testing 123 (Update EIP-9999)`);
     });
+
     it("Correctly Names Simulated PR-12: Modifies Website", async () => {
         let files = [{
             filename: "index.html",
@@ -152,5 +161,84 @@ describe("namePR", () => {
             } as User
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.websitePrefix}PR Title Testing 123 (Update Website)`);
+    });
+
+    it("Correctly Names Simulated PR-13: Modifies ERC-1", async () => {
+        let files = [{
+            filename: "ERCS/erc-1.md",
+            status: "modified",
+            contents: "---\ntitle: ERC Rules And Guidelines\nstatus: Living\n---\n## Testing1",
+            previous_contents: "---\ntitle: ERC Rules And Guidelines\nstatus: Living\n---\n## Testing2"
+        }] as File[];
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (ERC-1)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
+        expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP", "ERC").replace("XXXX", "1")}PR Title Testing 123 (ERC-1)`);
+    });
+
+    it("Correctly Names Simulated PR-14: Modifies ERC Template", async () => {
+        let files = [{
+            filename: "erc-template.md",
+            status: "modified",
+            contents: "---\ntitle: ERC Template\n---\n## Testing1",
+            previous_contents: "---\ntitle: ERC Template\n---\n## Testing2",
+        }] as File[];
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (ERC Template)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
+        expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP-XXXX", "ERC Template")}PR Title Testing 123 (ERC Template)`);
+    });
+
+    it("Correctly Names Simulated PR-15: Adds New ERC", async () => {
+        let files = [{
+            filename: "ERCS/erc-9999.md",
+            status: "added",
+            contents: "---\ntitle: Testing New ERC\n---\n## Testing1",
+        }] as File[];
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (ERC README)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
+        expect(prTitle).toEqual(`${localConfig.title.addEipPrefix.replace("EIP", "ERC")}Testing New ERC`);
+    });
+
+    it("Correctly Names Simulated PR-16: Updates ERC Status", async () => {
+        let files = [{
+            filename: "ERCS/erc-9999.md",
+            status: "modified",
+            contents: "---\ntitle: Testing New ERC\nstatus: Final\n---\n## Testing1",
+            previous_contents: "---\ntitle: Testing New ERC\nstatus: Living\n---\n## Testing2",
+        }] as File[];
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (Status Change ERC-9999)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
+        expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP", "ERC").replace("XXXX", "9999")}Move to Final`);
+    });
+
+    it("Correctly Names Simulated PR-17: Updates Existing ERC", async () => {
+        let files = [{
+            filename: "ERCS/erc-9999.md",
+            status: "modified",
+            contents: "---\ntitle: Testing New ERC\n---\n## Testing1",
+            previous_contents: "---\ntitle: Testing New ERC\n---\n## Testing2",
+        }] as File[];
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (Update ERC-9999)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
+        expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP", "ERC").replace("XXXX", "9999")}PR Title Testing 123 (Update ERC-9999)`);
     });
 });

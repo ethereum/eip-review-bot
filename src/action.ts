@@ -12,6 +12,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import http from 'isomorphic-git/http/node';
+import { exec } from 'child_process';
 
 const unknown = "<unknown>";
 
@@ -151,6 +152,7 @@ async function run() {
         const prBranchWalker = git.TREE({ ref: prBranchCommitOid });
 
         // Find most recent common ancestor between main and pr branches by walking back the commit tree
+        core.info('Finding common ancestor...')
         let mainBranchCommitHistorySet = new Set<string>();
         let prBranchCommitHistorySet = new Set<string>();
         let lastMainBranchCommitOid = mainBranchCommitOid;
@@ -179,7 +181,18 @@ async function run() {
             }
         }
         // Fetch the common ancestor commit and its data
-        const commonAncestorCommitOid = lastMainBranchCommitOid in prBranchCommitHistorySet ? lastMainBranchCommitOid : lastPrBranchCommitOid;
+        // TODO: Use the MRCA ancestor algorithm instead of running git merge-base through a shell
+        const commonAncestorCommitOid = (await new Promise<string>((resolve, reject) => {
+            exec(`git merge-base ${mainBranchCommitOid} ${prBranchCommitOid}`, { cwd: cloneDir }, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                } else if (stderr) {
+                    reject(stderr);
+                } else {
+                    resolve(stdout.trim());
+                }
+            });
+        }));
         const commonAncestorWalker = git.TREE({ ref: commonAncestorCommitOid });
 
         // Pull and parse config file ('eip-editors.yml') from main branch of main repository using only isomorphic-git (no fs)

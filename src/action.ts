@@ -173,18 +173,23 @@ async function run() {
         let config = undefined as { [key: string]: string[]; } | undefined;
         try {
             const configFilePath = core.getInput('config') || 'eip-editors.yml';
-            const configFileOid = [...mainBranchTree.values()].find(value => value.path == configFilePath)?.oid;
-            if (!configFileOid) {
-                previous_comment = (await octokit.rest.issues.updateComment({
-                    owner: repository.owner.login,
-                    repo: repository.name,
-                    comment_id: previous_comment.id,
-                    body: `❌ Could not find config file at \`${configFilePath}\`. Please ensure that the config file exists in the repository.`
-                })).data;
-                core.setFailed(`Could not find file "${configFilePath}"`);
-                process.exit(3);
+            const configFilePathSplit = configFilePath.split('/');
+            let configOid: string | undefined = mainBranchCommit.tree;
+            for (let path of configFilePathSplit) {
+                if (path == '') continue;
+                configOid = (await git.readTree({ fs, dir: cloneDir, oid: configOid as string })).tree.find(value => value.path == path)?.oid;
+                if (!configOid) {
+                    previous_comment = (await octokit.rest.issues.updateComment({
+                        owner: repository.owner.login,
+                        repo: repository.name,
+                        comment_id: previous_comment.id,
+                        body: `❌ Could not find config file at \`${configFilePath}\`. Please ensure that the config file exists in the repository.`
+                    })).data;
+                    core.setFailed(`Could not find file "${configFilePath}"`);
+                    process.exit(3);
+                }
             }
-            const configBlob = await git.readBlob({ fs, dir: cloneDir, oid: configFileOid });
+            const configBlob = await git.readBlob({ fs, dir: cloneDir, oid: configOid });
             config = parse(configBlob.toString()) as { [key: string]: string[]; };
             core.info(`Raw config object: ${JSON.stringify(config, null, 2)}`);
         } catch (e) {

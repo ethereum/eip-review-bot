@@ -252,7 +252,8 @@ async function run() {
                     // File was modified
                     const contentRaw = await prBranchEntry?.content() || new Uint8Array();
                     const previous_contentRaw = await commonAncestorEntry?.content() || new Uint8Array();
-                    if (contentRaw == previous_contentRaw) { // Don't convert to text if we don't have to
+                    // Raw type array equality checking is scuffed, so we have to do this
+                    if (contentRaw.length == previous_contentRaw.length && contentRaw.every((value, index) => value == previous_contentRaw[index])) {
                         return undefined;
                     }
                     return {

@@ -1,6 +1,6 @@
 import { Octokit, Config, File, Rule } from "../types.js";
 
-export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
+export default async function (_octokit: Octokit, config: Config, files: File[]) : Promise<Rule[]> {
     // Get results
     let res : Rule[][] = await Promise.all(files.map(async file => {
         if (file.filename != "config/eip-editors.yml") return [];

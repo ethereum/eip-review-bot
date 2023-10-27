@@ -167,16 +167,16 @@ async function run() {
             let { commit: lastPrBranchCommit } = await git.readCommit({ fs, dir: cloneDir, oid: lastPrBranchCommitOid });
 
             // If both commits have no parents, we've reached the end of the commit tree and there is no common ancestor
-            if (lastMainBranchCommit.parent.length == 0 && lastPrBranchCommit.parent.length == 0) {
+            if (!lastMainBranchCommit.parent?.length && !lastPrBranchCommit.parent?.length) {
                 core.setFailed("No common ancestor between main and pr branches");
                 process.exit(1);
             }
 
             // If either branch has parents, set the last commit to the first parent
-            if (lastMainBranchCommit.parent.length > 0) {
+            if (lastMainBranchCommit.parent?.length) {
                 lastMainBranchCommitOid = lastMainBranchCommit.parent[0];
             }
-            if (lastPrBranchCommit.parent.length > 0) {
+            if (lastPrBranchCommit.parent?.length) {
                 lastPrBranchCommitOid = lastPrBranchCommit.parent[0];
             }
         }

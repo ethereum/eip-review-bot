@@ -105,45 +105,43 @@ async function run() {
         core.info("Cloning repository and fetching required data...");
         const cloneDir = await fs.mkdtemp(path.join(os.tmpdir(), "eip-review-bot-"));
         core.info(`Cloning into ${cloneDir}`);
+        // This shouldn't work. But it does. And is by far the most reliable way to do this.
+        core.info(`Cloning from ${pull_request.head.repo?.clone_url || repository.clone_url} at ref ${pull_request.head.ref}`);
         await git.clone({
             fs,
             http,
             dir: cloneDir,
-            url: `https://github.com/${repository.owner.login}/${repository.name}.git`, // TODO: Figure out why repository.clone_url doesn't work
+            url: pull_request.head.repo?.clone_url || repository.clone_url,
+            remote: 'pr',
+            ref: pull_request.head.ref,
             singleBranch: true,
-            depth: -1,
-            ref: `refs/heads/${repository.default_branch}`,
         });
-        // Add remotes
-        await git.addRemote({
-            fs,
-            dir: cloneDir,
-            remote: "main",
-            url: repository.clone_url
-        });
-        await git.addRemote({
-            fs,
-            dir: cloneDir,
-            remote: "pr",
-            url: pull_request.head.repo?.clone_url || repository.clone_url
-        });
-        // Branch config (rename main branch to "main" and fetch PR branch to "pr")
-        await git.renameBranch({
-            fs,
-            dir: cloneDir,
-            oldref: repository.default_branch,
-            ref: "main"
-        });
-        await git.fetch({
+        if (pull_request.head.ref != "pr") {
+            await git.renameBranch({
+                fs,
+                dir: cloneDir,
+                oldref: pull_request.head.ref,
+                ref: 'pr'
+            });
+        }
+        core.info(`Cloning from ${repository.clone_url} at ref ${repository.default_branch}`);
+        await git.clone({
             fs,
             http,
             dir: cloneDir,
-            remote: "pr",
+            url: repository.clone_url,
+            remote: "main",
+            ref: repository.default_branch,
             singleBranch: true,
-            ref: "pr",
-            remoteRef: pull_request.head.ref,
-            depth: -1
         });
+        if (repository.default_branch != "main") {
+            await git.renameBranch({
+                fs,
+                dir: cloneDir,
+                oldref: repository.default_branch,
+                ref: 'main'
+            });
+        }
 
         // Get info that we need for later
         const mainBranchCommitOid = await git.resolveRef({ fs, dir: cloneDir, ref: 'main' });

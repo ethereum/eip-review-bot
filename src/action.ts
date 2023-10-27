@@ -153,33 +153,6 @@ async function run() {
 
         // Find most recent common ancestor between main and pr branches by walking back the commit tree
         core.info('Finding common ancestor...')
-        let mainBranchCommitHistorySet = new Set<string>();
-        let prBranchCommitHistorySet = new Set<string>();
-        let lastMainBranchCommitOid = mainBranchCommitOid;
-        let lastPrBranchCommitOid = prBranchCommitOid;
-        while (!(lastMainBranchCommitOid in prBranchCommitHistorySet || lastPrBranchCommitOid in mainBranchCommitHistorySet)) {
-            // Add current commit to history sets
-            mainBranchCommitHistorySet.add(lastMainBranchCommitOid);
-            prBranchCommitHistorySet.add(lastPrBranchCommitOid);
-
-            // Get parents of last commits
-            let { commit: lastMainBranchCommit } = await git.readCommit({ fs, dir: cloneDir, oid: lastMainBranchCommitOid });
-            let { commit: lastPrBranchCommit } = await git.readCommit({ fs, dir: cloneDir, oid: lastPrBranchCommitOid });
-
-            // If both commits have no parents, we've reached the end of the commit tree and there is no common ancestor
-            if (!lastMainBranchCommit.parent?.length && !lastPrBranchCommit.parent?.length) {
-                core.setFailed("No common ancestor between main and pr branches");
-                process.exit(1);
-            }
-
-            // If either branch has parents, set the last commit to the first parent
-            if (lastMainBranchCommit.parent?.length) {
-                lastMainBranchCommitOid = lastMainBranchCommit.parent[0];
-            }
-            if (lastPrBranchCommit.parent?.length) {
-                lastPrBranchCommitOid = lastPrBranchCommit.parent[0];
-            }
-        }
         // Fetch the common ancestor commit and its data
         // TODO: Use the MRCA ancestor algorithm instead of running git merge-base through a shell
         const commonAncestorCommitOid = (await new Promise<string>((resolve, reject) => {
@@ -195,6 +168,7 @@ async function run() {
         }));
         const commonAncestorWalker = git.TREE({ ref: commonAncestorCommitOid });
 
+        core.info('Parsing data...')
         // Pull and parse config file ('eip-editors.yml') from main branch of main repository using only isomorphic-git (no fs)
         let config = undefined as { [key: string]: string[]; } | undefined;
         try {
@@ -236,6 +210,7 @@ async function run() {
         config = config as { [key: string]: string[]; };
 
         // Get diff between common ancestor and pr branch trees
+        core.info('Generating PR diff...')
         const textDecoder = new TextDecoder();
         const files = (await git.walk({
             fs,
@@ -282,7 +257,9 @@ async function run() {
                 }
             }
         }) as (File | undefined)[]).filter(file => file != undefined) as File[];
+        core.info(`Raw file object: ${JSON.stringify(files, null, 2)}`);
 
+        core.info('Processing files...')
         // Get rule results
         let result = (await processFiles(octokit, config, files)).map((ruleog): RuleProcessed => {
             let rule = ruleog as RuleProcessed;

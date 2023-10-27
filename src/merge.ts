@@ -245,9 +245,10 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
     }
 
     // Push changes
-    if (anyFilesChanged) {
+    // TODO: DISABLED FOR NOW
+    /*if (anyFilesChanged) {
         pull_request = await updateFiles(octokit, pull_request as PullRequest, files, newFiles);
-    }
+    }*/
 
     // Update PR title
     let newPRTitle = await generatePRTitle(pull_request, newFiles);

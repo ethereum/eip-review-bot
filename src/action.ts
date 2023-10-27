@@ -9,6 +9,8 @@ import { RuleProcessed, File } from './types.js';
 import { performMergeAction, preMergeChanges } from './merge.js';
 import git from 'isomorphic-git';
 import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
 import http from 'isomorphic-git/http/node';
 
 const unknown = "<unknown>";
@@ -101,7 +103,7 @@ async function run() {
         
         // Clone the repository into a temporary directory
         core.info("Cloning repository and fetching required data...");
-        const cloneDir = await fs.mkdtemp("eip-review-bot-");
+        const cloneDir = await fs.mkdtemp(path.join(os.tmpdir(), "eip-review-bot-"));
         core.info(`Cloning into ${cloneDir}`);
         await git.clone({
             fs,

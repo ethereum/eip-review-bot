@@ -42,8 +42,8 @@ export async function generatePRTitle(pull_request: PullRequest, files: File[]) 
         return localConfig.title.configPrefix + title;
     }
 
-    // If the PR modifies the EIP template, use Update Template
-    if (files.some(file => file.filename === "eip-template.md")) {
+    // If the PR modifies the template, use Update Template
+    if (files.some(file => file.filename === "eip-template.md" || file.filename === "erc-template.md")) {
         return localConfig.title.updateEipPrefix.replace("EIP-XXXX", "Template") + title;
     }
 

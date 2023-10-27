@@ -192,7 +192,7 @@ describe("namePR", () => {
                 login: "testUser"
             } as User
         } as PullRequest, files);
-        expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP-XXXX", "ERC Template")}PR Title Testing 123 (ERC Template)`);
+        expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP-XXXX", "Template")}PR Title Testing 123 (ERC Template)`);
     });
 
     it("Correctly Names Simulated PR-15: Adds New ERC", async () => {

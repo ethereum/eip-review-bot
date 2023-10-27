@@ -169,6 +169,7 @@ async function run() {
         const commonAncestorWalker = git.TREE({ ref: commonAncestorCommitOid });
 
         core.info('Parsing data...')
+        const textDecoder = new TextDecoder();
         // Pull and parse config file ('eip-editors.yml') from main branch of main repository using only isomorphic-git (no fs)
         let config = undefined as { [key: string]: string[]; } | undefined;
         try {
@@ -189,8 +190,9 @@ async function run() {
                     process.exit(3);
                 }
             }
-            const configBlob = await git.readBlob({ fs, dir: cloneDir, oid: configOid });
-            config = parse(configBlob.toString()) as { [key: string]: string[]; };
+            const { blob: configBlob } = await git.readBlob({ fs, dir: cloneDir, oid: configOid });
+            const configText = textDecoder.decode(configBlob);
+            config = parse(configText) as { [key: string]: string[]; };
             core.info(`Raw config object: ${JSON.stringify(config, null, 2)}`);
         } catch (e) {
             previous_comment = (await octokit.rest.issues.updateComment({
@@ -216,7 +218,6 @@ async function run() {
 
         // Get diff between common ancestor and pr branch trees
         core.info('Generating PR diff...')
-        const textDecoder = new TextDecoder();
         const files = (await git.walk({
             fs,
             dir: cloneDir,

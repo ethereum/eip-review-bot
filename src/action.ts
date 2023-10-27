@@ -251,6 +251,9 @@ async function run() {
                     // File was modified
                     const contentRaw = await prBranchEntry?.content() || new Uint8Array();
                     const previous_contentRaw = await commonAncestorEntry?.content() || new Uint8Array();
+                    if (contentRaw == previous_contentRaw) { // Don't convert to text if we don't have to
+                        return undefined;
+                    }
                     return {
                         sha: await prBranchEntry?.oid(),
                         status: "modified",

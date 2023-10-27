@@ -32,7 +32,7 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
     }
 
     // If filename already has an EIP number, use that
-    if (file.filename.startsWith('EIPS/eip-')) {
+    if (file.filename.startsWith('EIPS/eip-') || file.filename.startsWith('ERCS/erc-')) {
         let eip = file.filename.split('-')[1].split('.')[0];
         if (eip.match(/^\d+$/)) {
             return eip;
@@ -40,15 +40,19 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
     }
 
     // Get all EIPs
-    const eips = (await octokit.rest.repos.getContent({
+    const eips = ((await octokit.rest.repos.getContent({
         owner: repository.owner.login,
         repo: repository.name,
         path: 'EIPS'
-    })).data as any[];
+    })).data as any[]).concat((await octokit.rest.repos.getContent({
+        owner: repository.owner.login,
+        repo: repository.name,
+        path: 'ERCS'
+    })).data as any[]);
 
     // Get all EIP numbers
     const eipNumbers = eips
-        .filter(eip => eip.name.startsWith('eip-'))
+        .filter(eip => eip.name.startsWith('eip-') || eip.name.startsWith('erc-'))
         .map(eip => {
             try {
                 return Number(eip.name.split('-')[1]);
@@ -60,9 +64,7 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
     // Find the biggest EIP number
     const eipNumber = Math.max(...eipNumbers);
 
-    // Add a random number from 1-5 to the EIP number
-    // This is to prevent conflicts when multiple PRs are merged at the same time, and to prevent number gaming
-    return (eipNumber + Math.floor(Math.random() * 3) + 1).toString();
+    return (eipNumber + 1).toString();
 }
 
 async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
@@ -151,7 +153,11 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
             let oldEip = frontmatter.eip;
             frontmatter.eip = `${eip}`;
             let oldFilename = file.filename;
-            file.filename = `EIPS/eip-${eip}.md`;
+            if (oldFilename.startsWith('EIPS/eip-')) {
+                file.filename = `EIPS/eip-${eip}.md`;
+            } else if (oldFilename.startsWith('ERCS/erc-')) {
+                file.filename = `ERCS/erc-${eip}.md`;
+            }
             
             if (oldFilename != file.filename || oldEip != eip) {
                 anyFilesChanged = true;

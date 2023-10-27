@@ -4,7 +4,7 @@ import fm from "front-matter";
 export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results
     let res : Rule[][] = await Promise.all(files.map(async file => {
-        if (!file.filename.endsWith(".md") || !file.filename.startsWith("EIPS/eip-")) return [];
+        if (!file.filename.endsWith(".md") || !(file.filename.startsWith("EIPS/eip-") || file.filename.startsWith("ERCS/erc-"))) return [];
 
         let frontMatter = fm<FrontMatter>(file.contents as string);
 

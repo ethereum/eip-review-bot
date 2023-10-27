@@ -4,7 +4,7 @@ import { Octokit, Config, FrontMatter, File, Rule } from "../types.js";
 export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results
     let res : Rule[][] = await Promise.all(files.map(async file => {
-        if (!file.filename.endsWith(".md")) return [];
+        if (!file.filename.endsWith(".md") && !(file.filename.startsWith("EIPS/eip-") || file.filename.startsWith("ERCS/erc-"))) return [];
 
         let frontMatter = fm<FrontMatter>(file.previous_contents as string);
         let status = frontMatter.attributes?.status?.toLowerCase() as string;

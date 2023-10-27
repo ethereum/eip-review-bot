@@ -156,13 +156,13 @@ async function run() {
         // Fetch the common ancestor commit and its data
         // TODO: Use the MRCA ancestor algorithm instead of running git merge-base through a shell
         const commonAncestorCommitOid = (await new Promise<string>((resolve, reject) => {
-            exec(`git merge-base --is-ancestor ${mainBranchCommitOid} ${prBranchCommitOid}`, { cwd: cloneDir }, (error, stdout, stderr) => {
+            exec(`git merge-base --octopus main pr`, { cwd: cloneDir }, (error, stdout, stderr) => {
                 if (error) {
                     reject(error);
                 } else if (stderr) {
                     reject(stderr);
                 } else {
-                    resolve(stdout.trim());
+                    resolve(stdout.trim().split('\n')[0]);
                 }
             });
         }));

@@ -109,10 +109,10 @@ async function run() {
             fs,
             http,
             dir: cloneDir,
-            url: repository.clone_url,
+            url: `https://github.com/${repository.owner.login}/${repository.name}.git`, // TODO: Figure out why repository.clone_url doesn't work
             singleBranch: true,
             depth: -1,
-            ref: repository.default_branch,
+            ref: `refs/heads/${repository.default_branch}`,
         });
         // Add remotes
         await git.addRemote({

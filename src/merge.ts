@@ -53,14 +53,14 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
             path: 'ERCS'
         },
     ];
-    const eips = [];
+    let eips = [];
     for (let eipPathConfig in eipPathConfigs) {
         const { data } = await octokit.rest.repos.getContent({
             owner: repository.owner.login,
             repo: repository.name,
             path: 'EIPS'
         });
-        eips.concat(data);
+        eips = eips.concat(data);
     }
 
     // Get all EIP numbers

@@ -241,4 +241,20 @@ describe("namePR", () => {
         } as PullRequest, files);
         expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP", "ERC").replace("XXXX", "9999")}PR Title Testing 123 (Update ERC-9999)`);
     });
+    
+    it("Correctly Names Simulated PR-18: Modifies ERC-1", async () => {
+        let files = [{
+            filename: "ERCS/erc-1.md",
+            status: "modified",
+            contents: "---\ntitle: EIP Rules And Guidelines\nstatus: Living\n---\n## Testing1",
+            previous_contents: "---\ntitle: EIP Rules And Guidelines\nstatus: Living\n---\n## Testing2"
+        }] as File[];
+        const prTitle = await generatePRTitle({
+            title: "PR Title Testing 123 (ERC-1)",
+            user: {
+                login: "testUser"
+            } as User
+        } as PullRequest, files);
+        expect(prTitle).toEqual(`${localConfig.title.updateEipPrefix.replace("EIP", "ERC").replace("XXXX", "1")}PR Title Testing 123 (ERC-1)`);
+    });
 });

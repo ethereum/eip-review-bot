@@ -21,7 +21,7 @@ export async function generatePRTitle(pull_request: PullRequest, files: File[]) 
 
     // If the PR modifies the website, use Website prefix unless the beginning portion is for EIP-1
     if (
-        (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".js") || file.filename.endsWith(".css") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-")))) &&
+        (files.some(file => file.filename.endsWith(".html") || file.filename.endsWith(".js") || file.filename.endsWith(".css") || (file.filename.startsWith("assets/") && !file.filename.startsWith("assets/eip-") && !file.filename.startsWith("assets/erc-")))) &&
         (!beginnningPortion || !beginnningPortion.toLowerCase().endsWith("eip-1"))
     ) {
         return localConfig.title.websitePrefix + title;
@@ -30,6 +30,11 @@ export async function generatePRTitle(pull_request: PullRequest, files: File[]) 
     // If the PR modifies EIP-1, indicate that
     if (files.some(file => file.filename == "EIPS/eip-1.md")) {
         return localConfig.title.updateEipPrefix.replace("EIP-XXXX", "EIP-1") + title;
+    }
+    
+    // If the PR modifies ERC-1, indicate that
+    if (files.some(file => file.filename == "ERCS/erc-1.md")) {
+        return localConfig.title.updateEipPrefix.replace("EIP-XXXX", "ERC-1") + title;
     }
     
     // If the PR changes a file in the .github/workflows directory, use CI prefix

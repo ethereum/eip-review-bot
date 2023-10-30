@@ -150,6 +150,9 @@ export async function preMergeChanges(octokit: Octokit, _: Config, repository: R
     let oldEipToNewEip: { [key: string]: string } = {};
     for (let file of files) {
         file = { ...file };
+        if (file.status == 'removed') {
+            continue; // Don't need to do stuff with removed files
+        }
         if (file.filename.endsWith('.md')) {
             // Parse file
             const fileContent = file.contents as string;

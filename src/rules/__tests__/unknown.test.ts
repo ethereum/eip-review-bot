@@ -16,6 +16,6 @@ describe("checkOtherFiles", () => {
     });
 
     test("Should not require any reviewers on known file", () => {
-        expect(checkOtherFiles(fakeOctokit, { governance: ["a", "b", "c"] }, [{ filename: "EIPS/foo.txt", status: "modified" }])).resolves.toMatchObject([]);
+        expect(checkOtherFiles(fakeOctokit, { governance: ["a", "b", "c"] }, [{ filename: "EIPS/eip-asdf.md", status: "modified" }])).resolves.toMatchObject([]);
     });
 });

@@ -4,18 +4,22 @@ import processFiles from "../process.js";
 export default async function (octokit: Octokit, config: Config, files: File[]) : Promise<Rule[]> {
     // Get results
     let res : Rule[][] = await Promise.all(files.map(async file => {
+        let filename = '';
         if (file.filename.startsWith("assets/eip-") && !files.some(f => f.filename == `EIPS/${file.filename.split("/")[2]}.md`)) {
-            return processFiles(octokit, config, [{
-                filename: `EIPS/${file.filename.split("/")[1]}.md`,
-                status: 'modified',
-            }]);
+            filename = `EIPS/${file.filename.split("/")[1]}.md`;
         } else if (file.filename.startsWith("assets/erc-") && !files.some(f => f.filename == `ERCS/${file.filename.split("/")[2]}.md`)) {
-            return processFiles(octokit, config, [{
-                filename: `ERCS/${file.filename.split("/")[1]}.md`,
-                status: 'modified',
-            }]);
+            filename = `ERCS/${file.filename.split("/")[1]}.md`;
         }
-        return [];
+        if (filename == '') {
+            return []; // Not an asset file
+        }
+        if (files.some(file => file.filename == filename)) {
+            return []; // Already covered by the relevant rules, so avoid potential conflicts by short circuiting
+        }
+        return processFiles(octokit, config, [{
+            filename,
+            status: 'modified',
+        }]);
     }));
 
     // Merge results

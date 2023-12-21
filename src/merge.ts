@@ -11,7 +11,7 @@ function getGitBlobSha(content: string) {
     return crypto.createHash('sha1').update(`blob ${content.length}\0${content}`).digest('hex');
 }
 
-async function generateEIPNumber(octokit: Octokit, repository: Repository, frontmatter: FrontMatter, file: File, isMerging: boolean = false): Promise<string> {
+async function generateEIPNumber(octokit: Octokit, _repository: Repository, frontmatter: FrontMatter, file: File, isMerging: boolean = false): Promise<string> {
     // Generate mnemonic name for draft EIPs or EIPs not yet about to be merged
     //if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) { // What I want to do
     if (!isMerging && frontmatter.status == 'Draft' && file.status == 'added') { // What I have to do
@@ -53,8 +53,8 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
             path: 'ERCS'
         },
     ];
-    let eips = [];
-    for (let eipPathConfig in eipPathConfigs) {
+    let eips: {name: string}[] = [];
+    for (const eipPathConfig of eipPathConfigs) {
         const { data } = await octokit.rest.repos.getContent(eipPathConfig);
         eips = eips.concat(data);
     }
@@ -76,6 +76,8 @@ async function generateEIPNumber(octokit: Octokit, repository: Repository, front
     return (eipNumber + 1).toString();
 }
 
+// `updateFiles` is currently disabled, so ignore the unused error.
+// @ts-expect-error
 async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles: File[], newFiles: File[]) {
     let owner = pull_request.head.repo?.owner?.login as string;
     let repo = pull_request.head.repo?.name as string;
@@ -145,7 +147,11 @@ async function updateFiles(octokit: Octokit, pull_request: PullRequest, oldFiles
 
 export async function preMergeChanges(octokit: Octokit, _: Config, repository: Repository, pull_request: PullRequest, files: File[], isMerging: boolean = false) {
     // Modify EIP data when needed
+
+    // `updateFiles` is currently disabled, so ignore the unused error.
+    // @ts-expect-error
     let anyFilesChanged = false;
+
     let newFiles = [];
     let oldEipToNewEip: { [key: string]: string } = {};
     for (let file of files) {

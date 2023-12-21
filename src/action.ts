@@ -148,7 +148,6 @@ async function run() {
         const mainBranchCommitOid = await git.resolveRef({ fs, dir: cloneDir, ref: 'main' });
         const prBranchCommitOid = await git.resolveRef({ fs, dir: cloneDir, ref: 'pr' });
         const { commit: mainBranchCommit } = await git.readCommit({ fs, dir: cloneDir, oid: mainBranchCommitOid });
-        const { tree: mainBranchTree } = await git.readTree({ fs, dir: cloneDir, oid: mainBranchCommit.tree });
         const prBranchWalker = git.TREE({ ref: prBranchCommitOid });
 
         // Find most recent common ancestor between main and pr branches by walking back the commit tree

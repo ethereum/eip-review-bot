@@ -8,7 +8,7 @@ describe("checkAuthors", () => {
         await expect(
             checkAuthors(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
@@ -23,7 +23,7 @@ describe("checkAuthors", () => {
                 min: 1,
                 pr_approval: true,
                 annotation: {
-                    file: "EIPS/eip-1.md",
+                    file: "content/00001.md",
                 },
             },
         ]);
@@ -33,7 +33,7 @@ describe("checkAuthors", () => {
         await expect(
             checkAuthors(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "added",
                     contents:
                         "---\nstatus: Draft\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
@@ -46,7 +46,7 @@ describe("checkAuthors", () => {
         await expect(
             checkAuthors(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Living\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
@@ -61,7 +61,7 @@ describe("checkAuthors", () => {
         await expect(
             checkAuthors(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
@@ -76,7 +76,7 @@ describe("checkAuthors", () => {
                 min: 1,
                 pr_approval: true,
                 annotation: {
-                    file: "ERCS/erc-1.md",
+                    file: "content/00001.md",
                 },
             },
         ]);
@@ -86,7 +86,7 @@ describe("checkAuthors", () => {
         await expect(
             checkAuthors(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001.md",
                     status: "added",
                     contents:
                         "---\nstatus: Draft\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
@@ -99,7 +99,7 @@ describe("checkAuthors", () => {
         await expect(
             checkAuthors(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Living\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",

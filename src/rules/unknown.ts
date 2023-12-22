@@ -8,19 +8,19 @@ export default async function (
     // Get results
     const res: Rule[][] = await Promise.all(
         files.map((file) => {
-            if (
-                file.filename.startsWith("EIPS/eip-") ||
-                file.filename.startsWith("ERCS/erc-") ||
-                file.filename.startsWith("assets/eip-") ||
-                file.filename.startsWith("assets/erc-")
-            )
+            const isKnown =
+                /^content\/[0-9]+(\/index)?.md$/.test(file.filename) ||
+                /^content\/[0-9]+\/assets\/.*$/.test(file.filename);
+
+            if (isKnown) {
                 return []; // All of those cases are handled by the other rules
+            }
 
             return [
                 {
                     name: "unknown",
-                    reviewers: config.governance,
-                    min: Math.floor(config.governance.length / 2),
+                    reviewers: config.editors,
+                    min: Math.floor(config.editors.length / 2),
                     pr_approval: true,
                     annotation: {
                         file: file.filename,

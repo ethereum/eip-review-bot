@@ -8,22 +8,19 @@ export default async function (
     // Get results
     const res: Rule[][] = await Promise.all(
         files.map((file) => {
-            if (file.filename != "config/eip-editors.yml") return [];
+            if (file.filename != ".wg/reviewers.yml") return [];
             return [
                 {
                     name: "editors",
-                    reviewers: config.governance,
-                    min: Math.max(
-                        config.governance.length - 1,
-                        Math.min(config.governance.length, 2),
-                    ),
+                    reviewers: config.editors,
+                    min: 1,
                     pr_approval: true,
                     annotation: {
                         file: file.filename,
                     },
                     labels: ["e-consensus"],
                 },
-            ] as Rule[];
+            ];
         }),
     );
 

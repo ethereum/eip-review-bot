@@ -4,18 +4,18 @@ import checkEditorFile from "../editorFile";
 const fakeOctokit = null as unknown as Octokit; // Ew, but it works
 
 describe("checkOtherFiles", () => {
-    test("Should require governance editors on editor file", async () => {
+    test("Should require editors on reviewer file", async () => {
         await expect(
-            checkEditorFile(fakeOctokit, { governance: ["a", "b", "c"] }, [
-                { filename: "config/eip-editors.yml", status: "modified" },
+            checkEditorFile(fakeOctokit, { editors: ["a", "b", "c"] }, [
+                { filename: ".wg/reviewers.yml", status: "modified" },
             ]),
         ).resolves.toMatchObject([
             {
                 name: "editors",
                 reviewers: ["a", "b", "c"],
-                min: 2,
+                min: 1,
                 annotation: {
-                    file: "config/eip-editors.yml",
+                    file: ".wg/reviewers.yml",
                 },
             },
         ]);
@@ -23,8 +23,8 @@ describe("checkOtherFiles", () => {
 
     test("Should not require any reviewers on known file", async () => {
         await expect(
-            checkEditorFile(fakeOctokit, { governance: ["a", "b", "c"] }, [
-                { filename: "EIPS/foo.txt", status: "modified" },
+            checkEditorFile(fakeOctokit, { editors: ["a", "b", "c"] }, [
+                { filename: "content/00002.md", status: "modified" },
             ]),
         ).resolves.toMatchObject([]);
     });

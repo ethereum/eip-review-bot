@@ -20,14 +20,14 @@ const unknown = "<unknown>";
 const GITHUB_TOKEN = core.getInput('token');
 const ThrottledOctokit = GitHub.plugin(throttling);
 const octokit = new ThrottledOctokit(getOctokitOptions(GITHUB_TOKEN, { throttle: {
-    onRateLimit: (retryAfter: number, options: any) => {
+    onRateLimit: (retryAfter, options) => {
         core.warning(`Request quota exhausted for request ${options?.method || unknown} ${options?.url || unknown}`);
         if (options?.request?.retryCount <= 2) {
             core.notice(`Retrying after ${retryAfter} seconds!`);
             return true;
         }
     },
-    onSecondaryRateLimit: (_retryAfter: number, options: any) => core.error(`Abuse detected for request ${options?.method || unknown} ${options?.url || unknown}`),
+    onSecondaryRateLimit: (_retryAfter, options) => core.error(`Abuse detected for request ${options?.method || unknown} ${options?.url || unknown}`),
 } }));
 
 async function run() {
@@ -39,7 +39,7 @@ async function run() {
     if (!pull_number) {  // If ran from a non pull_request event, fetch necessary data
         core.info("Detected non pull_request_target configuration. Fetching data.");
         pull_number = parseInt(core.getInput('pr_number'));
-        let pull_request_response = await octokit.rest.pulls.get({
+        const pull_request_response = await octokit.rest.pulls.get({
             owner: repository.owner.login,
             repo: repository.name,
             pull_number
@@ -60,15 +60,15 @@ async function run() {
         core.info("Pull Request is already merged. Exiting.");
         process.exit(0);
     }
-    
+
     // Get comment info
-    let me = await octokit.rest.users.getAuthenticated();
-    let comments = await octokit.rest.issues.listComments({
+    const me = await octokit.rest.users.getAuthenticated();
+    const comments = await octokit.rest.issues.listComments({
         owner: repository.owner.login,
         repo: repository.name,
         issue_number: pull_number
     });
-    
+
     let previous_comment = comments.data.find(comment => comment?.user?.login == me.data.login);
     if (previous_comment) {
         previous_comment = (await octokit.rest.issues.updateComment({
@@ -90,7 +90,7 @@ async function run() {
     try {
         // If PR doesn't have "allow edits from maintainers" enabled, error
         if (!pull_request?.maintainer_can_modify && repository.owner.login != pull_request.base.repo.owner.login) {
-            let body = "❌ PR does not have \"Allow edits from maintainers\" enabled. This is required for the EIP Review Bot to function. Please enable it."
+            const body = "❌ PR does not have \"Allow edits from maintainers\" enabled. This is required for the EIP Review Bot to function. Please enable it."
             previous_comment = (await octokit.rest.issues.updateComment({
                 owner: repository.owner.login,
                 repo: repository.name,
@@ -175,9 +175,9 @@ async function run() {
             const configFilePath = core.getInput('config') || 'eip-editors.yml';
             const configFilePathSplit = configFilePath.split('/');
             let configOid: string | undefined = mainBranchCommit.tree;
-            for (let path of configFilePathSplit) {
+            for (const path of configFilePathSplit) {
                 if (path == '') continue;
-                configOid = (await git.readTree({ fs, dir: cloneDir, oid: configOid as string })).tree.find(value => value.path == path)?.oid;
+                configOid = (await git.readTree({ fs, dir: cloneDir, oid: configOid })).tree.find(value => value.path == path)?.oid;
                 if (!configOid) {
                     previous_comment = (await octokit.rest.issues.updateComment({
                         owner: repository.owner.login,
@@ -271,7 +271,7 @@ async function run() {
         core.info('Processing files...')
         // Get rule results
         let result = (await processFiles(octokit, config, files)).map((ruleog): RuleProcessed => {
-            let rule = ruleog as RuleProcessed;
+            const rule = ruleog as RuleProcessed;
             rule.reviewers = rule.reviewers.map(reviewer => reviewer.toLowerCase());
             rule.min = Math.min(rule.min, rule.reviewers.length);
             rule.label_min = rule.min;
@@ -284,7 +284,7 @@ async function run() {
 
         // Add PR author as reviewer when applicable
         result = result.map((rule: RuleProcessed): RuleProcessed => {
-            if (rule.pr_approval && rule.reviewers.includes(pull_request?.user?.login?.toLowerCase() as string)) {
+            if (rule.pr_approval && rule.reviewers.includes(pull_request?.user?.login?.toLowerCase())) {
                 core.info(`PR Author "@${pull_request?.user?.login}" matched rule "${rule.name}" (PR Author Approval Enabled)`);
                 rule.min = rule.min - 1;
                 rule.label_min = rule.label_min - 1;
@@ -293,7 +293,7 @@ async function run() {
             }
             return rule;
         });
-        approvedBy.add(pull_request?.user?.login as string);
+        approvedBy.add(pull_request?.user?.login);
 
         // Add proper reviewers as reviewers
         const reviews = await octokit.paginate(octokit.rest.pulls.listReviews, {
@@ -301,10 +301,10 @@ async function run() {
             repo: repository.name,
             pull_number
         });
-        for (let review of reviews) {
+        for (const review of reviews) {
             if (review.user?.login) {
                 if (review.state == 'APPROVED') {
-                    approvedBy.add(review.user?.login as string);
+                    approvedBy.add(review.user?.login);
                 }
                 result = result.map((rule: RuleProcessed): RuleProcessed => {
                     if (review.state == 'APPROVED') {
@@ -329,24 +329,24 @@ async function run() {
         // Remove all rules that were satisfied, and all active reviewers
         let labels_to_add: Set<string> = new Set();
         let labels_to_remove: Set<string> = new Set();
-        let labels_to_not_add: Set<string> = new Set();
+        const labels_to_not_add: Set<string> = new Set();
         result = result.filter(rule => {
             if (rule.label_min <= 0) {
                 if (rule.labels) {
-                    for (let label of rule.labels) {
+                    for (const label of rule.labels) {
                         core.info(`Label "${label}" was removed by rule "${rule.name}"`);
                         labels_to_remove.add(label);
                     }
                 }
             } else {
                 if (rule.labels) {
-                    for (let label of rule.labels) {
+                    for (const label of rule.labels) {
                         core.info(`Label "${label}" was added by rule "${rule.name}"`);
                         labels_to_add.add(label);
                     }
                 }
                 if (rule.exclude_labels) {
-                    for (let label of rule.exclude_labels) {
+                    for (const label of rule.exclude_labels) {
                         core.info(`Label "${label}" was excluded by rule "${rule.name}"`);
                         labels_to_not_add.add(label);
                     }
@@ -376,16 +376,16 @@ async function run() {
         labels_to_remove = new Set([...labels_to_remove, ...labels_to_not_add]);
         
         // Generate success data
-        let wholePassed = result.length == 0;
+        const wholePassed = result.length == 0;
 
         // Generate comment
         let comment = '';
         if (!wholePassed) {
-            let filesToRules = {} as { [key: string]: { min: number, requesting: string[] }[] };
-            for (let rule of result) {
+            const filesToRules: { [key: string]: { min: number, requesting: string[] }[] } = {};
+            for (const rule of result) {
                 core.error(`Rule ${rule.name} requires ${rule.min} more reviewers: ${rule.reviewers.map(requesting => `@${requesting}`).join(", ")}`, rule.annotation);
                 if (rule.annotation.file) {
-                    let file = rule.annotation.file as string;
+                    const file = rule.annotation.file;
                     filesToRules[file] = filesToRules[file] || [];
                     filesToRules[file].push({ min: rule.min, requesting: rule.reviewers });
                 } else {
@@ -393,11 +393,11 @@ async function run() {
                 }
             }
 
-            for (let file in filesToRules) {
+            for (const file in filesToRules) {
                 comment = `${comment}\n\n### File \`${file}\`\n\n`;
-                let pastReviewers = [] as string[];
-                for (let rule of filesToRules[file]) {
-                    for (let rule2 of filesToRules[file]) {
+                const pastReviewers: string[] = [];
+                for (const rule of filesToRules[file]) {
+                    for (const rule2 of filesToRules[file]) {
                         if (!pastReviewers.includes(rule.requesting.sort().join(',')) && rule.requesting.sort().join(',') === rule2.requesting.sort().join(',')) {
                             pastReviewers.push(rule.requesting.sort().join(','));
                             if (rule2.min > rule.min) {
@@ -430,7 +430,7 @@ async function run() {
         }
         
         // Update labels
-        let labels = (await octokit.rest.issues.listLabelsOnIssue({
+        const labels = (await octokit.rest.issues.listLabelsOnIssue({
             owner: repository.owner.login,
             repo: repository.name,
             issue_number: pull_number
@@ -447,7 +447,7 @@ async function run() {
             });
         }
         core.info(`Removing labels: ${Array.from(labels_to_remove).join(", ")}`);
-        for (let label of labels_to_remove) {
+        for (const label of labels_to_remove) {
             core.info(`Removing label "${label}"`);
             await octokit.rest.issues.removeLabel({
                 owner: repository.owner.login,
@@ -465,18 +465,22 @@ async function run() {
             core.info("Auto merging...");
             try {
                 await performMergeAction(octokit, config, repository, pull_request, files);
-            } catch (e: any) {
+            } catch (e: unknown) {
                 previous_comment = (await octokit.rest.issues.updateComment({
                     owner: repository.owner.login,
                     repo: repository.name,
                     comment_id: previous_comment.id,
                     body: `🛑 Auto merge failed. Please see logs for more details, and report this issue at the [\`eip-review-bot\` repository](https://github.com/ethereum/eip-review-bot).`
                 })).data;
-                core.setFailed(e);
+                if (typeof e === 'string' || e instanceof Error) {
+                    core.setFailed(e);
+                } else {
+                    core.setFailed(`error ${String(e)}`);
+                }
                 process.exit(2);
             }
         }
-    } catch (e: any) {
+    } catch (e: unknown) {
         previous_comment = (await octokit.rest.issues.updateComment({
             owner: repository.owner.login,
             repo: repository.name,
@@ -485,6 +489,6 @@ async function run() {
         })).data;
         throw e;
     }
-};
+}
 
-run();
+run().catch(() => process.exit(2));

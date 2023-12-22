@@ -9,14 +9,14 @@ import checkTerminalStatus from './rules/terminal.js';
 import checkEditorFile from './rules/editorFile.js';
 import checkOtherFiles from './rules/unknown.js';
 
-let rules = [ checkAssets, checkAuthors, checkNew, checkStatus, checkStagnant, checkTerminalStatus, checkEditorFile, checkOtherFiles ];
+const rules = [ checkAssets, checkAuthors, checkNew, checkStatus, checkStagnant, checkTerminalStatus, checkEditorFile, checkOtherFiles ];
 
 export default async function(octokit: Octokit, config: Config, files: File[]) {
     // Get results
-    let res : Rule[][] = await Promise.all(rules.map(rule => rule(octokit, config, files)));
+    const res : Rule[][] = await Promise.all(rules.map(rule => rule(octokit, config, files)));
 
     // Merge results
-    let ret: Rule[] = [];
+    const ret: Rule[] = [];
     res.forEach(val => ret.push(...val));
     return ret;
 }

@@ -3,10 +3,10 @@ import fm from "front-matter";
 
 export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results
-    let res : Rule[][] = await Promise.all(files.map(async file => {
+    const res : Rule[][] = await Promise.all(files.map(file => {
         if (!file.filename.endsWith(".md") || !(file.filename.startsWith("EIPS/eip-") || file.filename.startsWith("ERCS/erc-"))) return [];
 
-        let frontMatter = fm<FrontMatter>(file.contents as string);
+        const frontMatter = fm<FrontMatter>(file.contents as string);
 
         if (["added"].includes(file.status)) {
             return [{
@@ -24,7 +24,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
     }));
 
     // Merge results
-    let ret: Rule[] = [];
+    const ret: Rule[] = [];
     res.forEach(val => ret.push(...val));
     return ret;
 }

@@ -3,17 +3,17 @@ import { Octokit, Config, FrontMatter, File, Rule } from "../types.js";
 
 export default async function (_octokit: Octokit, config: Config, files: File[] ) : Promise<Rule[]> {
     // Get results
-    let res : Rule[][] = await Promise.all(files.map(async file => {
+    const res : Rule[][] = await Promise.all(files.map(file => {
         if (!file.filename.endsWith(".md") && !(file.filename.startsWith("EIPS/eip-") || file.filename.startsWith("ERCS/erc-"))) return [];
 
-        let frontMatter = fm<FrontMatter>(file.previous_contents as string);
-        let status = frontMatter.attributes?.status?.toLowerCase() as string;
+        const frontMatter = fm<FrontMatter>(file.previous_contents as string);
+        const status = frontMatter.attributes?.status?.toLowerCase();
         
         if (["living", "final", "withdrawn"].includes(status)) {
-            let authors: string[] = frontMatter.attributes.author?.match(/(?<=(?:^|,)[^<(]+\(@)(.*?)(?=\)(?:$|,))/g) || [];
+            const authors: string[] = frontMatter.attributes.author?.match(/(?<=(?:^|,)[^<(]+\(@)(.*?)(?=\)(?:$|,))/g) || [];
             let pr_approval = false;
             let min = Math.floor(config.governance.length / 2);
-            for (let editor of config.governance) {
+            for (const editor of config.governance) {
                 if (authors.includes(editor)) {
                     pr_approval = true;
                     min = 1;
@@ -37,7 +37,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[] 
     }));
 
     // Merge results
-    let ret: Rule[] = [];
+    const ret: Rule[] = [];
     res.forEach(val => ret.push(...val));
     return ret;
 }

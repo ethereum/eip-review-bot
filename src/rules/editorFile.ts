@@ -2,7 +2,7 @@ import { Octokit, Config, File, Rule } from "../types.js";
 
 export default async function (_octokit: Octokit, config: Config, files: File[]) : Promise<Rule[]> {
     // Get results
-    let res : Rule[][] = await Promise.all(files.map(async file => {
+    const res : Rule[][] = await Promise.all(files.map(file => {
         if (file.filename != "config/eip-editors.yml") return [];
         return [{
             name: "editors",
@@ -17,7 +17,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[])
     }));
 
     // Merge results
-    let ret: Rule[] = [];
+    const ret: Rule[] = [];
     res.forEach(val => ret.push(...val));
     return ret;
 }

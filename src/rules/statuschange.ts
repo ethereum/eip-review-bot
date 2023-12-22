@@ -1,16 +1,16 @@
 import fm from "front-matter";
 import { Octokit, Config, FrontMatter, File, Rule } from "../types.js";
 
-let statusOrder = ["withdrawn", "stagnant", "draft", "review", "last call", "final", "living"];
-let ignoreStatuses = ["withdrawn", "stagnant", "final", "living"];
+const statusOrder = ["withdrawn", "stagnant", "draft", "review", "last call", "final", "living"];
+const ignoreStatuses = ["withdrawn", "stagnant", "final", "living"];
 
 export default async function (_octokit: Octokit, config: Config, files: File[]) : Promise<Rule[]> {
     // Get results
-    let res : Rule[][] = await Promise.all(files.map(async file => {
+    const res : Rule[][] = await Promise.all(files.map(file => {
         if (!file.filename.endsWith(".md") || !(file.filename.startsWith("EIPS/eip-") || file.filename.startsWith("ERCS/erc-"))) return [];
 
-        let frontMatter = fm<FrontMatter>(file.previous_contents as string);
-        let frontMatterNew = fm<FrontMatter>(file.contents as string);
+        const frontMatter = fm<FrontMatter>(file.previous_contents as string);
+        const frontMatterNew = fm<FrontMatter>(file.contents as string);
         
         if (!("status" in frontMatter.attributes && "status" in frontMatterNew.attributes)) {
             return [{
@@ -24,8 +24,8 @@ export default async function (_octokit: Octokit, config: Config, files: File[])
             }] as Rule[]; // Fallback: require editor approval if there's missing statuses
         }
         
-        let statusOld = frontMatter.attributes?.status?.toLowerCase() as string;
-        let statusNew = frontMatterNew.attributes?.status?.toLowerCase() as string;
+        const statusOld = frontMatter.attributes?.status?.toLowerCase();
+        const statusNew = frontMatterNew.attributes?.status?.toLowerCase();
         
         if (ignoreStatuses.includes(statusOld)) {
             return []; // Handled by other rules
@@ -47,7 +47,7 @@ export default async function (_octokit: Octokit, config: Config, files: File[])
     }));
 
     // Merge results
-    let ret: Rule[] = [];
+    const ret: Rule[] = [];
     res.forEach(val => ret.push(...val));
     return ret;
 }

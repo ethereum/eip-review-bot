@@ -19,10 +19,18 @@ export function generateMockOctokit(): Octokit {
     return {
         rest: {
             pulls: {
-                get: async (params: any) => { // Typescript bindings are wrong here
-                    let owner: string = params.owner;
-                    let repo: string = params.repo;
-                    let pull_number: number = params.pull_number
+                // @typescript-eslint/no-explicit-any
+                //      TypeScript bindings are wrong here.
+                //
+                // @typescript-eslint/require-await
+                //      This function must return a Promise, even if it never
+                //      awaits anything in this mock.
+                //
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/require-await
+                get: async (params: any) => {
+                    const owner: string = params.owner;
+                    const repo: string = params.repo;
+                    const pull_number: number = params.pull_number
                     if (owner === "ethereum" && repo === "EIPs") {
                         switch (pull_number) {
                             case 1:
@@ -108,11 +116,11 @@ export function generateMockOctokit(): Octokit {
             }
         }
     } as Octokit;
-};
+}
 
-export let mockOctokit: Octokit = generateMockOctokit();
+export const mockOctokit: Octokit = generateMockOctokit();
 
-export let mockEthereumOrg: User = {
+export const mockEthereumOrg: User = {
     id: 1,
     login: "ethereum",
     type: "Organization",
@@ -132,7 +140,7 @@ export let mockEthereumOrg: User = {
     received_events_url: "https://api.github.com/users/ethereum/received_events",
     site_admin: false
 };
-export let mockForkUser: User = {
+export const mockForkUser: User = {
     id: 2,
     login: "fork-user",
     type: "User",
@@ -153,7 +161,7 @@ export let mockForkUser: User = {
     site_admin: false
 };
 
-export let mockEIPsRepo: Repository = {
+export const mockEIPsRepo: Repository = {
     id: 1,
     owner: mockEthereumOrg,
     name: "EIPs",
@@ -238,7 +246,7 @@ export let mockEIPsRepo: Repository = {
     watchers: 0,
     web_commit_signoff_required: false,
 };
-export let mockEIPsForkRepo: Repository = {
+export const mockEIPsForkRepo: Repository = {
     id: 1,
     owner: mockForkUser,
     name: "fork-user",

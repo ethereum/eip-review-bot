@@ -4,9 +4,10 @@ import type { FrontMatter } from "./types";
 import localConfig from "./localConfig";
 import fm from "front-matter";
 
-export async function generatePRTitle(pull_request: PullRequest, files: File[]) {
+export function generatePRTitle(pull_request: PullRequest, files: File[]) {
     // Get PR title, ignoring the prefix before the first colon
-    let { title, user } = pull_request;
+    let title = pull_request.title;
+    const user = pull_request.user;
 
     // Ignore PRs from Renovate
     if (user?.login == "renovate[bot]") {
@@ -59,8 +60,8 @@ export async function generatePRTitle(pull_request: PullRequest, files: File[]) 
 
     // If the PR adds a new EIP, use Add EIP prefix
     if (files.some(file => file.filename.startsWith("EIPS/eip-") && file.status === "added")) {
-        let theFile = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "added");
-        let frontMatter = fm<FrontMatter>(theFile?.contents as string);
+        const theFile = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "added");
+        const frontMatter = fm<FrontMatter>(theFile?.contents as string);
         if (!frontMatter.attributes?.title) {
             return false;
         }
@@ -69,8 +70,8 @@ export async function generatePRTitle(pull_request: PullRequest, files: File[]) 
 
     // If the PR adds a new ERC, use Add ERC prefix
     if (files.some(file => file.filename.startsWith("ERCS/erc-") && file.status === "added")) {
-        let theFile = files.find(file => file.filename.startsWith("ERCS/erc-") && file.status === "added");
-        let frontMatter = fm<FrontMatter>(theFile?.contents as string);
+        const theFile = files.find(file => file.filename.startsWith("ERCS/erc-") && file.status === "added");
+        const frontMatter = fm<FrontMatter>(theFile?.contents as string);
         if (!frontMatter.attributes?.title) {
             return false;
         }
@@ -79,27 +80,27 @@ export async function generatePRTitle(pull_request: PullRequest, files: File[]) 
 
     // If the PR updates an existing EIP's status, use Update EIP prefix and custom title
     if (files.some(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0] != file.previous_contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0])) {
-        let eipNumber = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified")?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
-        let newStatus = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0] != file.previous_contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0])?.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0];
+        const eipNumber = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified")?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
+        const newStatus = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified" && file.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0] != file.previous_contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0])?.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0];
         return localConfig.title.updateEipPrefix.replace("XXXX", eipNumber) + `Move to ${newStatus}`;
     }
 
     // If the PR updates an existing ERC's status, use Update ERC prefix and custom title
     if (files.some(file => file.filename.startsWith("ERCS/erc-") && file.status === "modified" && file.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0] != file.previous_contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0])) {
-        let eipNumber = files.find(file => file.filename.startsWith("ERCS/erc-") && file.status === "modified")?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
-        let newStatus = files.find(file => file.filename.startsWith("ERCS/erc-") && file.status === "modified" && file.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0] != file.previous_contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0])?.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0];
+        const eipNumber = files.find(file => file.filename.startsWith("ERCS/erc-") && file.status === "modified")?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
+        const newStatus = files.find(file => file.filename.startsWith("ERCS/erc-") && file.status === "modified" && file.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0] != file.previous_contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0])?.contents?.match(/(?<=status:\W?)\w[^\r\n]*/g)?.[0];
         return localConfig.title.updateEipPrefix.replace("EIP-XXXX", "ERC-" + eipNumber) + `Move to ${newStatus}`;
     }
 
     // Otherwise, if the PR changes an existing EIP, use Update EIP prefix
     if (files.some(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified")) {
-        let eipNumber = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified")?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
+        const eipNumber = files.find(file => file.filename.startsWith("EIPS/eip-") && file.status === "modified")?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
         return localConfig.title.updateEipPrefix.replace("XXXX", eipNumber) + title;
     }
 
     // Otherwise, if the PR changes an existing ERC, use Update ERC prefix
     if (files.some(file => file.filename.startsWith("ERCS/erc-") && file.status === "modified")) {
-        let eipNumber = files.find(file => file.filename.startsWith("ERCS/erc-") && file.status === "modified")?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
+        const eipNumber = files.find(file => file.filename.startsWith("ERCS/erc-") && file.status === "modified")?.filename.split("/")[1].split(".")[0].split("-")[1] as string;
         return localConfig.title.updateEipPrefix.replace("EIP-XXXX", "ERC-" + eipNumber) + title;
     }
 

@@ -3,7 +3,7 @@ import processFiles from "../process.js";
 
 export default async function (octokit: Octokit, config: Config, files: File[]) : Promise<Rule[]> {
     // Get results
-    let res : Rule[][] = await Promise.all(files.map(async file => {
+    const res : Rule[][] = await Promise.all(files.map(async file => {
         let filename = '';
         if (file.filename.startsWith("assets/eip-") && !files.some(f => f.filename == `EIPS/${file.filename.split("/")[2]}.md`)) {
             filename = `EIPS/${file.filename.split("/")[1]}.md`;
@@ -23,7 +23,7 @@ export default async function (octokit: Octokit, config: Config, files: File[]) 
     }));
 
     // Merge results
-    let ret: Rule[] = [];
+    const ret: Rule[] = [];
     res.forEach(val => ret.push(...val));
     return ret;
 }

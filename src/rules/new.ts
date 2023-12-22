@@ -1,5 +1,4 @@
-import { Config, File, FrontMatter, Octokit, Rule } from "../types.js";
-import fm from "front-matter";
+import { Config, File, Octokit, Rule } from "../types.js";
 
 export default async function (
     _octokit: Octokit,
@@ -9,39 +8,30 @@ export default async function (
     // Get results
     const res: Rule[][] = await Promise.all(
         files.map((file) => {
-            if (
-                !file.filename.endsWith(".md") ||
-                !(
-                    file.filename.startsWith("EIPS/eip-") ||
-                    file.filename.startsWith("ERCS/erc-")
-                )
-            )
+            const considerFile =
+                file.status.toLowerCase() == "added" &&
+                /^content\/[0-9]+(\/index)?.md$/.test(file.filename);
+
+            if (!considerFile) {
                 return [];
-
-            const frontMatter = fm<FrontMatter>(file.contents as string);
-
-            if (["added"].includes(file.status)) {
-                return [
-                    {
-                        name: "new",
-                        reviewers:
-                            config[
-                                (
-                                    frontMatter.attributes?.category ||
-                                    frontMatter.attributes?.type ||
-                                    "governance"
-                                ).toLowerCase()
-                            ],
-                        min: 1,
-                        annotation: {
-                            file: file.filename,
-                        },
-                        labels: ["e-review"],
-                    },
-                ] as Rule[];
             }
 
-            return [];
+            let reviewers = config.members;
+            if (!config.members || !config.members.length) {
+                reviewers = config.editors;
+            }
+
+            return [
+                {
+                    name: "new",
+                    reviewers,
+                    min: 1,
+                    annotation: {
+                        file: file.filename,
+                    },
+                    labels: ["e-review"],
+                },
+            ];
         }),
     );
 

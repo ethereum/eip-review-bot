@@ -9,11 +9,11 @@ inputs:
   config:
     description: Config file location
     required: false
-    default: ''
+    default: ""
   pr_number:
     description: The PR Number
     required: false
-    default: ''
+    default: ""
 
 runs:
   using: node16

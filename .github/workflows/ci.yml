@@ -33,6 +33,6 @@ jobs:
 
       - name: Build
         run: bun run build
-        
+
       - name: Test
         run: bun test

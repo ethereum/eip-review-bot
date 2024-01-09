@@ -37,7 +37,7 @@ const octokit = new ThrottledOctokit(
                     return true;
                 }
             },
-            onSecondaryRateLimit: (_retryAfter, options) =>
+            onSecondaryRateLimit: (_retryAfter, options: any) =>
                 core.error(
                     `Abuse detected for request ${options?.method || unknown} ${
                         options?.url || unknown

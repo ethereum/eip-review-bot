@@ -26,7 +26,8 @@ const ThrottledOctokit = GitHub.plugin(throttling);
 const octokit = new ThrottledOctokit(
     getOctokitOptions(GITHUB_TOKEN, {
         throttle: {
-            onRateLimit: (retryAfter, options: any) => { // TODO: Fix typing for options
+            onRateLimit: (retryAfter, options) => {
+                // TODO: Fix typing for options
                 core.warning(
                     `Request quota exhausted for request ${
                         options?.method || unknown
@@ -37,7 +38,7 @@ const octokit = new ThrottledOctokit(
                     return true;
                 }
             },
-            onSecondaryRateLimit: (_retryAfter, options: any) =>
+            onSecondaryRateLimit: (_retryAfter, options) =>
                 core.error(
                     `Abuse detected for request ${options?.method || unknown} ${
                         options?.url || unknown

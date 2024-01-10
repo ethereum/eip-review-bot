@@ -8,7 +8,7 @@ describe("checkStatus", () => {
         await expect(
             checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
@@ -21,7 +21,7 @@ describe("checkStatus", () => {
                 reviewers: ["a", "b", "c"],
                 min: 1,
                 annotation: {
-                    file: "EIPS/eip-1.md",
+                    file: "content/00001.md",
                 },
             },
         ]);
@@ -31,7 +31,7 @@ describe("checkStatus", () => {
         await expect(
             checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "added",
                     previous_contents:
                         "---\ntest: asdf\ncategory: ERC\n---\nHello!",
@@ -44,7 +44,7 @@ describe("checkStatus", () => {
                 reviewers: ["a", "b", "c"],
                 min: 1,
                 annotation: {
-                    file: "EIPS/eip-1.md",
+                    file: "content/00001.md",
                 },
             },
         ]);
@@ -54,7 +54,7 @@ describe("checkStatus", () => {
         await expect(
             checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "added",
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
@@ -67,7 +67,7 @@ describe("checkStatus", () => {
                 reviewers: ["a", "b", "c"],
                 min: 1,
                 annotation: {
-                    file: "EIPS/eip-1.md",
+                    file: "content/00001.md",
                 },
             },
         ]);
@@ -77,7 +77,7 @@ describe("checkStatus", () => {
         await expect(
             checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Review\ncategory: ERC\n---\nHello!",
@@ -91,7 +91,7 @@ describe("checkStatus", () => {
         await expect(
             checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
@@ -101,11 +101,11 @@ describe("checkStatus", () => {
         ).resolves.toMatchObject([]);
     });
 
-    test("Should require one reviewer on ERC file with downgraded status", async () => {
+    test("Should require one reviewer on index.md with downgraded status", async () => {
         await expect(
             checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001/index.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
@@ -118,7 +118,7 @@ describe("checkStatus", () => {
                 reviewers: ["a", "b", "c"],
                 min: 1,
                 annotation: {
-                    file: "ERCS/erc-1.md",
+                    file: "content/00001/index.md",
                 },
             },
         ]);
@@ -128,7 +128,7 @@ describe("checkStatus", () => {
         await expect(
             checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001.md",
                     status: "added",
                     previous_contents:
                         "---\ntest: asdf\ncategory: ERC\n---\nHello!",
@@ -141,7 +141,7 @@ describe("checkStatus", () => {
                 reviewers: ["a", "b", "c"],
                 min: 1,
                 annotation: {
-                    file: "ERCS/erc-1.md",
+                    file: "content/00001.md",
                 },
             },
         ]);
@@ -151,7 +151,7 @@ describe("checkStatus", () => {
         await expect(
             checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001.md",
                     status: "added",
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
@@ -164,17 +164,17 @@ describe("checkStatus", () => {
                 reviewers: ["a", "b", "c"],
                 min: 1,
                 annotation: {
-                    file: "ERCS/erc-1.md",
+                    file: "content/00001.md",
                 },
             },
         ]);
     });
 
-    test("Should not require any reviewers on ERC file with downgraded status", async () => {
+    test("Should not require any reviewers on index.md with downgraded status", async () => {
         await expect(
             checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001/index.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Review\ncategory: ERC\n---\nHello!",
@@ -184,11 +184,11 @@ describe("checkStatus", () => {
         ).resolves.toMatchObject([]);
     });
 
-    test("Should not require any reviewers on ERC file with unchanged status", async () => {
+    test("Should not require any reviewers on index.md with unchanged status", async () => {
         await expect(
             checkStatus(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001/index.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",

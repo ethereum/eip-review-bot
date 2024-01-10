@@ -20,19 +20,27 @@ export default async function (
     // Get results
     const res: Rule[][] = await Promise.all(
         files.map((file) => {
-            if (
-                !file.filename.endsWith(".md") ||
-                !(
-                    file.filename.startsWith("EIPS/eip-") ||
-                    file.filename.startsWith("ERCS/erc-")
-                )
-            )
-                return [];
-
-            const frontMatter = fm<FrontMatter>(
-                file.previous_contents as string,
+            const considerFile = /^content\/[0-9]+(\/index)?.md$/.test(
+                file.filename,
             );
-            const frontMatterNew = fm<FrontMatter>(file.contents as string);
+            if (!considerFile) {
+                return [];
+            }
+
+            const oldContents = file.previous_contents;
+            if (typeof oldContents !== "string") {
+                throw new Error(
+                    `'${file.filename}' non-string previous contents`,
+                );
+            }
+
+            const newContents = file.contents;
+            if (typeof newContents !== "string") {
+                throw new Error(`'${file.filename}' non-string contents`);
+            }
+
+            const frontMatterNew = fm<FrontMatter>(newContents);
+            const frontMatter = fm<FrontMatter>(oldContents);
 
             if (
                 !(
@@ -57,7 +65,7 @@ export default async function (
                         },
                         labels: ["e-consensus"],
                     },
-                ] as Rule[]; // Fallback: require editor approval if there's missing statuses
+                ]; // Fallback: require editor approval if there's missing statuses
             }
 
             const statusOld = frontMatter.attributes?.status?.toLowerCase();
@@ -87,7 +95,7 @@ export default async function (
                         },
                         labels: ["e-review"],
                     },
-                ] as Rule[];
+                ];
             }
 
             return [];

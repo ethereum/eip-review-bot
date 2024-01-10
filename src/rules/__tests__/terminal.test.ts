@@ -11,7 +11,7 @@ describe("checkTerminalStatus", () => {
                 { governance: ["a", "b", "c", "d"] },
                 [
                     {
-                        filename: "EIPS/eip-1.md",
+                        filename: "content/00001.md",
                         status: "modified",
                         previous_contents: "---\nstatus: Final\n---\nHello!",
                     },
@@ -23,7 +23,7 @@ describe("checkTerminalStatus", () => {
                 reviewers: ["a", "b", "c", "d"],
                 min: 2,
                 annotation: {
-                    file: "EIPS/eip-1.md",
+                    file: "content/00001.md",
                 },
             },
         ]);
@@ -33,7 +33,7 @@ describe("checkTerminalStatus", () => {
         await expect(
             checkTerminalStatus(fakeOctokit, { governance: ["a", "b", "c"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "modified",
                     previous_contents: "---\nstatus: Draft\n---\nHello!",
                 },
@@ -41,14 +41,14 @@ describe("checkTerminalStatus", () => {
         ).resolves.toMatchObject([]);
     });
 
-    test("Should require half of governance editors on ERC terminal file", async () => {
+    test("Should require half of governance editors on terminal index.md", async () => {
         await expect(
             checkTerminalStatus(
                 fakeOctokit,
                 { governance: ["a", "b", "c", "d"] },
                 [
                     {
-                        filename: "ERCS/erc-1.md",
+                        filename: "content/00001/index.md",
                         status: "modified",
                         previous_contents: "---\nstatus: Final\n---\nHello!",
                     },
@@ -60,17 +60,17 @@ describe("checkTerminalStatus", () => {
                 reviewers: ["a", "b", "c", "d"],
                 min: 2,
                 annotation: {
-                    file: "ERCS/erc-1.md",
+                    file: "content/00001/index.md",
                 },
             },
         ]);
     });
 
-    test("Should not require any reviewers on non-terminal ERC file", async () => {
+    test("Should not require any reviewers on non-terminal index.md", async () => {
         await expect(
             checkTerminalStatus(fakeOctokit, { governance: ["a", "b", "c"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001/index.md",
                     status: "modified",
                     previous_contents: "---\nstatus: Draft\n---\nHello!",
                 },

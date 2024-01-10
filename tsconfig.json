@@ -1,14 +1,16 @@
 {
-  "compilerOptions": {
-    "target": "es2021",
-    "module": "es6",
-    "rootDir": "./src",
-    "strict": true,
-    "alwaysStrict": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true
-  },
-  "exclude": ["node_modules"]
+    "extends": "@tsconfig/recommended/tsconfig.json",
+
+    "compilerOptions": {
+        "target": "es2021",
+        "module": "es6",
+        "rootDir": "./src",
+        "strict": true,
+        "alwaysStrict": true,
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
+    },
+    "exclude": ["node_modules"]
 }

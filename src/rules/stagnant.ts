@@ -9,18 +9,19 @@ export default async function (
     // Get results
     const res: Rule[][] = await Promise.all(
         files.map((file) => {
-            if (
-                !file.filename.endsWith(".md") ||
-                !(
-                    file.filename.startsWith("EIPS/eip-") ||
-                    file.filename.startsWith("ERCS/erc-")
-                )
-            )
-                return [];
-
-            const frontMatter = fm<FrontMatter>(
-                file.previous_contents as string,
+            const considerFile = /^content\/[0-9]+(\/index)?.md$/.test(
+                file.filename,
             );
+            if (!considerFile) {
+                return [];
+            }
+
+            const contents = file.previous_contents;
+            if (typeof contents !== "string") {
+                throw new Error(`'${file.filename}' non-string contents`);
+            }
+
+            const frontMatter = fm<FrontMatter>(contents);
             const status = frontMatter.attributes?.status?.toLowerCase();
 
             if (status == "stagnant") {

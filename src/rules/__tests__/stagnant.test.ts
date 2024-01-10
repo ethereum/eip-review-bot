@@ -8,7 +8,7 @@ describe("checkStagnant", () => {
         await expect(
             checkStagnant(fakeOctokit, { erc: ["a", "b", "c", "d"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Stagnant\ncategory: ERC\n---\nHello!",
@@ -21,7 +21,7 @@ describe("checkStagnant", () => {
                 reviewers: ["a", "b", "c", "d"],
                 min: 1,
                 annotation: {
-                    file: "EIPS/eip-1.md",
+                    file: "content/00001.md",
                 },
             },
         ]);
@@ -31,7 +31,7 @@ describe("checkStagnant", () => {
         await expect(
             checkStagnant(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "EIPS/eip-1.md",
+                    filename: "content/00001.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Final\ncategory: ERC\n---\nHello!",
@@ -42,11 +42,11 @@ describe("checkStagnant", () => {
         ).resolves.toMatchObject([]);
     });
 
-    test("Should require one reviewer on ERC resurrection", async () => {
+    test("Should require one reviewer on index.md resurrection", async () => {
         await expect(
             checkStagnant(fakeOctokit, { erc: ["a", "b", "c", "d"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001/index.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Stagnant\ncategory: ERC\n---\nHello!",
@@ -59,17 +59,17 @@ describe("checkStagnant", () => {
                 reviewers: ["a", "b", "c", "d"],
                 min: 1,
                 annotation: {
-                    file: "ERCS/erc-1.md",
+                    file: "content/00001/index.md",
                 },
             },
         ]);
     });
 
-    test("Should not require any reviewers on ERC file with irrelevant status", async () => {
+    test("Should not require any reviewers on index.md with irrelevant status", async () => {
         await expect(
             checkStagnant(fakeOctokit, { erc: ["a", "b", "c"] }, [
                 {
-                    filename: "ERCS/erc-1.md",
+                    filename: "content/00001/index.md",
                     status: "modified",
                     previous_contents:
                         "---\nstatus: Final\ncategory: ERC\n---\nHello!",

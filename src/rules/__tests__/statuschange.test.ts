@@ -3,6 +3,18 @@ import checkStatus from "../statuschange";
 
 const fakeOctokit = null as unknown as Octokit; // Ew, but it works
 
+const source_remote = {
+    owner: "ausername",
+    repo: "EIPS",
+    ref: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+};
+
+const target_remote = {
+    owner: "ethereum",
+    repo: "EIPS",
+    ref: "5c5bcf09cdddb3150774e83e295d99e38a4a4a3a",
+};
+
 describe("checkStatus", () => {
     test("Should require one reviewer on EIP file with downgraded status", async () => {
         await expect(
@@ -13,6 +25,8 @@ describe("checkStatus", () => {
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
                     contents: "---\nstatus: Review\ncategory: ERC\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([
@@ -36,6 +50,8 @@ describe("checkStatus", () => {
                     previous_contents:
                         "---\ntest: asdf\ncategory: ERC\n---\nHello!",
                     contents: "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([
@@ -59,6 +75,8 @@ describe("checkStatus", () => {
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
                     contents: "---\ntest: asdf\ncategory: ERC\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([
@@ -82,6 +100,8 @@ describe("checkStatus", () => {
                     previous_contents:
                         "---\nstatus: Review\ncategory: ERC\n---\nHello!",
                     contents: "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([]);
@@ -96,6 +116,8 @@ describe("checkStatus", () => {
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
                     contents: "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
+                    target_remote,
+                    source_remote,
                 },
             ]),
         ).resolves.toMatchObject([]);
@@ -110,6 +132,8 @@ describe("checkStatus", () => {
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
                     contents: "---\nstatus: Review\ncategory: ERC\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([
@@ -133,6 +157,8 @@ describe("checkStatus", () => {
                     previous_contents:
                         "---\ntest: asdf\ncategory: ERC\n---\nHello!",
                     contents: "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([
@@ -156,6 +182,8 @@ describe("checkStatus", () => {
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
                     contents: "---\ntest: asdf\ncategory: ERC\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([
@@ -179,6 +207,8 @@ describe("checkStatus", () => {
                     previous_contents:
                         "---\nstatus: Review\ncategory: ERC\n---\nHello!",
                     contents: "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([]);
@@ -193,6 +223,8 @@ describe("checkStatus", () => {
                     previous_contents:
                         "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
                     contents: "---\nstatus: Draft\ncategory: ERC\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([]);
@@ -206,6 +238,8 @@ describe("checkStatus", () => {
                     status: "modified",
                     previous_contents: "Hello!",
                     contents: "Hello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([]);

@@ -293,6 +293,19 @@ async function run() {
         }
         config = config as { [key: string]: string[] };
 
+        const source_remote = {
+            owner:
+                pull_request.head.repo?.owner.login || repository.owner.login,
+            repo: pull_request.head.repo?.name || repository.name,
+            ref: prBranchCommitOid,
+        };
+
+        const target_remote = {
+            owner: repository.owner.login,
+            repo: repository.name,
+            ref: mainBranchCommitOid,
+        };
+
         // Get diff between common ancestor and pr branch trees
         core.info("Generating PR diff...");
         const files = (
@@ -319,6 +332,8 @@ async function run() {
                             previous_filename: undefined,
                             contents: textDecoder.decode(contentRaw),
                             previous_contents: undefined,
+                            target_remote,
+                            source_remote,
                         };
                     } else if (prBranchEntry == null) {
                         // File was removed
@@ -332,6 +347,8 @@ async function run() {
                             previous_filename: undefined,
                             contents: undefined,
                             previous_contents: textDecoder.decode(contentRaw),
+                            target_remote,
+                            source_remote,
                         };
                     } else {
                         // File was modified
@@ -359,6 +376,8 @@ async function run() {
                             contents: textDecoder.decode(contentRaw),
                             previous_contents:
                                 textDecoder.decode(previous_contentRaw),
+                            target_remote,
+                            source_remote,
                         };
                     }
                 },

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/require-await */
 import type { Octokit } from "../types";
 import { Repository, User } from "@octokit/webhooks-types";
 
@@ -18,15 +21,34 @@ import { Repository, User } from "@octokit/webhooks-types";
 export function generateMockOctokit(): Octokit {
     return {
         rest: {
+            repos: {
+                getContent: async (params: any): Promise<any> => {
+                    const path: string = params.path;
+                    if (path === "content/00005.md") {
+                        return {
+                            data: {
+                                type: "file",
+                                content: `---
+eip: 5
+title: Some EIP
+description: Some EIP's description
+author: Foo (@foo)
+discussions-to: https://example.com
+status: Draft
+type: Standards Track
+category: Core
+created: 2020-10-05
+---
+
+hello world`,
+                            },
+                        };
+                    } else {
+                        throw new Error(`Missing mock for ${path}`);
+                    }
+                },
+            },
             pulls: {
-                // @typescript-eslint/no-explicit-any
-                //      TypeScript bindings are wrong here.
-                //
-                // @typescript-eslint/require-await
-                //      This function must return a Promise, even if it never
-                //      awaits anything in this mock.
-                //
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/require-await
                 get: async (params: any) => {
                     const owner: string = params.owner;
                     const repo: string = params.repo;

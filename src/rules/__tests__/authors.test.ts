@@ -3,6 +3,18 @@ import checkAuthors from "../authors";
 
 const fakeOctokit = null as unknown as Octokit; // Ew, but it works
 
+const source_remote = {
+    owner: "ausername",
+    repo: "EIPS",
+    ref: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+};
+
+const target_remote = {
+    owner: "ethereum",
+    repo: "EIPS",
+    ref: "5c5bcf09cdddb3150774e83e295d99e38a4a4a3a",
+};
+
 describe("checkAuthors", () => {
     test("Should require author approval for modified EIPs", async () => {
         await expect(
@@ -14,6 +26,8 @@ describe("checkAuthors", () => {
                         "---\nstatus: Draft\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
                     contents:
                         "---\nstatus: Draft\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([
@@ -37,6 +51,8 @@ describe("checkAuthors", () => {
                     status: "added",
                     contents:
                         "---\nstatus: Draft\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([]);
@@ -52,6 +68,8 @@ describe("checkAuthors", () => {
                         "---\nstatus: Living\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
                     contents:
                         "---\nstatus: Living\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([]);
@@ -67,6 +85,8 @@ describe("checkAuthors", () => {
                         "---\nstatus: Draft\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
                     contents:
                         "---\nstatus: Draft\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([
@@ -90,6 +110,8 @@ describe("checkAuthors", () => {
                     status: "added",
                     contents:
                         "---\nstatus: Draft\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([]);
@@ -105,6 +127,8 @@ describe("checkAuthors", () => {
                         "---\nstatus: Living\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
                     contents:
                         "---\nstatus: Living\ncategory: ERC\nauthor: Hello World (@hello), Neet (@neet), Honk, Foo <bar@example.com>\n---\nHello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([]);
@@ -118,6 +142,8 @@ describe("checkAuthors", () => {
                     status: "modified",
                     previous_contents: "Hello!",
                     contents: "Hello!",
+                    source_remote,
+                    target_remote,
                 },
             ]),
         ).resolves.toMatchObject([]);

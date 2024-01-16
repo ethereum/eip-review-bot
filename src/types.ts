@@ -1,5 +1,11 @@
 import core from "@actions/core";
 
+export declare type Remote = {
+    owner: string;
+    repo: string;
+    ref: string;
+};
+
 export declare type File = {
     sha?: string;
     status:
@@ -14,6 +20,8 @@ export declare type File = {
     previous_filename?: string | undefined;
     contents?: string | undefined;
     previous_contents?: string | undefined;
+    target_remote: Remote;
+    source_remote: Remote;
 };
 
 export declare type Octokit = import("@octokit/core/dist-types").Octokit &

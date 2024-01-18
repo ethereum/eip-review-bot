@@ -423,6 +423,7 @@ export async function performMergeAction(
         "id" in response.repository.pullRequest &&
         response.repository.pullRequest.id;
     if (typeof pullRequestId !== "number") {
+        console.error("non-numeric pull request id", JSON.stringify(response));
         throw new Error("non-numeric pull request id");
     }
 

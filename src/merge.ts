@@ -422,9 +422,9 @@ export async function performMergeAction(
         typeof response.repository.pullRequest === "object" &&
         "id" in response.repository.pullRequest &&
         response.repository.pullRequest.id;
-    if (typeof pullRequestId !== "number") {
-        console.error("non-numeric pull request id", JSON.stringify(response));
-        throw new Error("non-numeric pull request id");
+    if (!pullRequestId) {
+        console.error("missing pull request id", JSON.stringify(response));
+        throw new Error("missing pull request id");
     }
 
     await octokit.graphql(

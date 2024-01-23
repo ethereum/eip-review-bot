@@ -1,4 +1,5 @@
 import { Config, File, Octokit, Rule } from "../types.js";
+import { isAsset, isProposal } from "../utils.js";
 
 export default async function (
     _octokit: Octokit,
@@ -8,11 +9,7 @@ export default async function (
     // Get results
     const res: Rule[][] = await Promise.all(
         files.map((file) => {
-            const isKnown =
-                /^content\/[0-9]+(\/index)?.md$/.test(file.filename) ||
-                /^content\/[0-9]+\/assets\/.*$/.test(file.filename);
-
-            if (isKnown) {
+            if (isProposal(file) || isAsset(file)) {
                 return []; // All of those cases are handled by the other rules
             }
 

@@ -1,4 +1,5 @@
 import { Config, File, FrontMatter, Octokit, Rule } from "../types.js";
+import { isProposal } from "../utils.js";
 import fm from "front-matter";
 
 const RE_AUTHORS =
@@ -13,8 +14,7 @@ export default async function (
     const res: Rule[][] = await Promise.all(
         files.map((file) => {
             const considerFile =
-                file.status.toLowerCase() != "added" &&
-                /^content\/[0-9]+(\/index)?.md$/.test(file.filename);
+                file.status.toLowerCase() != "added" && isProposal(file);
 
             if (!considerFile) {
                 return [];

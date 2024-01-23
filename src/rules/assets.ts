@@ -1,15 +1,15 @@
 import processFiles from "../process.js";
 import { Config, File, Octokit, Rule } from "../types.js";
+import { RE_ASSET, RE_PROPOSAL } from "../utils.js";
 
 export default async function (
     octokit: Octokit,
     config: Config,
     files: File[],
 ): Promise<Rule[]> {
-    const reEip = /^content\/([0-9]+)(?:\/index)?.md$/;
     const modified: Map<number, string> = new Map();
     for (const file of files) {
-        const match = file.filename.match(reEip);
+        const match = file.filename.match(RE_PROPOSAL);
         if (!match) {
             continue;
         }
@@ -21,9 +21,7 @@ export default async function (
     const res: Rule[][] = await Promise.all(
         files.map(async (file) => {
             // Extract the EIP number from the path.
-            const match = file.filename.match(
-                /^content\/([0-9]+)\/assets\/.*$/,
-            );
+            const match = file.filename.match(RE_ASSET);
             if (!match) {
                 return [];
             }

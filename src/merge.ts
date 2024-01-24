@@ -1,4 +1,5 @@
 import { generatePRTitle } from "./namePr";
+import { eipNumber, isAsset, isProposal } from "./paths";
 import { Config, File, FrontMatter, Octokit } from "./types";
 import type { Repository } from "@octokit/webhooks-types";
 import { PullRequest } from "@octokit/webhooks-types";
@@ -44,14 +45,8 @@ async function generateEIPNumber(
     }
 
     // If filename already has an EIP number, use that
-    if (
-        file.filename.startsWith("EIPS/eip-") ||
-        file.filename.startsWith("ERCS/erc-")
-    ) {
-        const eip = file.filename.split("-")[1].split(".")[0];
-        if (eip.match(/^\d+$/)) {
-            return eip;
-        }
+    if (isProposal(file)) {
+        return eipNumber(file).toString();
     }
 
     // Get all EIPs
@@ -76,21 +71,19 @@ async function generateEIPNumber(
 
     // Get all EIP numbers
     const eipNumbers = eips
-        .filter(
-            (eip) => eip.name.startsWith("eip-") || eip.name.startsWith("erc-"),
-        )
+        .filter((eip) => isProposal(eip.name))
         .map((eip) => {
             try {
-                return Number(eip.name.split("-")[1]);
+                return eipNumber(eip.name);
             } catch {
                 return 0;
             }
         });
 
     // Find the biggest EIP number
-    const eipNumber = Math.max(...eipNumbers);
+    const biggest = Math.max(...eipNumbers);
 
-    return (eipNumber + 1).toString();
+    return (biggest + 1).toString();
 }
 
 async function updateFiles(
@@ -188,16 +181,26 @@ export async function preMergeChanges(
 
     const newFiles: File[] = [];
     const oldEipToNewEip: { [key: string]: string } = {};
+    const re = /(?<=^content\/)[^/]+(?=(:?\.md|\/.+)$)/;
+
     for (let file of files) {
         file = { ...file };
         if (file.status == "removed") {
             continue; // Don't need to do stuff with removed files
         }
-        if (file.filename.endsWith(".md")) {
+
+        // XXX: Sam modified the renaming logic to "work" with working groups,
+        //      but because the code is disabled, it is untested. Here be
+        //      dragons.
+        if (isProposal(file)) {
             // Parse file
-            const fileContent = file.contents as string;
-            const fileData = fm(fileContent);
-            const frontmatter = fileData.attributes as FrontMatter;
+            const fileContent = file.contents;
+            if (typeof fileContent !== "string") {
+                throw new Error(`non-string contents in '${file.filename}'`);
+            }
+
+            const fileData = fm<FrontMatter>(fileContent);
+            const frontmatter = fileData.attributes;
 
             // Check if EIP number needs setting
             const eip = await generateEIPNumber(
@@ -210,27 +213,28 @@ export async function preMergeChanges(
 
             const oldEip = frontmatter.eip;
             frontmatter.eip = `${eip}`;
+            const paddedEip = frontmatter.eip.padStart(5, "0");
             const oldFilename = file.filename;
-            if (oldFilename.startsWith("EIPS/eip-")) {
-                file.filename = `EIPS/eip-${eip}.md`;
-            } else if (oldFilename.startsWith("ERCS/erc-")) {
-                file.filename = `ERCS/erc-${eip}.md`;
-            }
+            file.filename = oldFilename.replace(re, paddedEip);
 
             if (oldFilename != file.filename || oldEip != eip) {
                 anyFilesChanged = true;
-                oldEipToNewEip[oldFilename.split("-")?.[1]] = file.filename;
+                const oldFileMatch = oldFilename.match(re);
+                if (!oldFileMatch) {
+                    throw new Error(`file name missing id: '${oldFilename}'`);
+                }
+                oldEipToNewEip[oldFileMatch[0]] = paddedEip;
 
                 // Retroactively update asset files
                 for (let i = 0; i < newFiles.length; i++) {
                     if (
                         newFiles[i].filename.startsWith(
-                            `assets/eip-${oldFilename.split("-")?.[1]}`,
+                            `content/${oldFileMatch[0]}`,
                         )
                     ) {
                         newFiles[i].filename = newFiles[i].filename.replace(
-                            `eip-${oldFilename.split("-")?.[1]}`,
-                            `eip-${eip}`,
+                            re,
+                            paddedEip,
                         );
                     }
                 }
@@ -322,15 +326,16 @@ export async function preMergeChanges(
 
             // Push
             newFiles.push(file);
-        } else if (file.filename.startsWith("assets/eip-")) {
+        } else if (isAsset(file)) {
             const oldFilename = file.filename;
-            const eip = oldFilename.split("-")?.[1];
+            const oldFileMatch = oldFilename.match(re);
+            if (!oldFileMatch) {
+                throw new Error(`file name missing id: '${oldFilename}'`);
+            }
+            const eip = oldFileMatch[0];
             if (eip in oldEipToNewEip) {
                 // Rename file
-                file.filename = file.filename.replace(
-                    `eip-${eip}`,
-                    `eip-${oldEipToNewEip[eip].split("-")?.[1]}`,
-                );
+                file.filename = file.filename.replace(re, oldEipToNewEip[eip]);
 
                 if (oldFilename != file.filename) {
                     anyFilesChanged = true;

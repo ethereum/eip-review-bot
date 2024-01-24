@@ -14,13 +14,13 @@ function getGitBlobSha(content: string) {
         .digest("hex");
 }
 
-async function generateEIPNumber(
-    octokit: Octokit,
+function generateEIPNumber(
+    _octokit: Octokit,
     _repository: Repository,
     frontmatter: FrontMatter,
     file: File,
     isMerging: boolean = false,
-): Promise<string> {
+): string {
     // Generate mnemonic name for draft EIPs or EIPs not yet about to be merged
     //if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) { // What I want to do
     if (!isMerging && frontmatter.status == "Draft" && file.status == "added") {
@@ -49,41 +49,9 @@ async function generateEIPNumber(
         return eipNumber(file).toString();
     }
 
-    // Get all EIPs
-    // TODO: This should not be hardcoded
-    const eipPathConfigs = [
-        {
-            owner: "ethereum",
-            repo: "EIPs",
-            path: "EIPS",
-        },
-        {
-            owner: "ethereum",
-            repo: "ERCs",
-            path: "ERCS",
-        },
-    ];
-    let eips: { name: string }[] = [];
-    for (const eipPathConfig of eipPathConfigs) {
-        const { data } = await octokit.rest.repos.getContent(eipPathConfig);
-        eips = eips.concat(data);
-    }
-
-    // Get all EIP numbers
-    const eipNumbers = eips
-        .filter((eip) => isProposal(eip.name))
-        .map((eip) => {
-            try {
-                return eipNumber(eip.name);
-            } catch {
-                return 0;
-            }
-        });
-
-    // Find the biggest EIP number
-    const biggest = Math.max(...eipNumbers);
-
-    return (biggest + 1).toString();
+    throw new Error(
+        `generating EIP numbers is not yet supported ('${file.filename}')`,
+    );
 }
 
 async function updateFiles(
@@ -203,7 +171,7 @@ export async function preMergeChanges(
             const frontmatter = fileData.attributes;
 
             // Check if EIP number needs setting
-            const eip = await generateEIPNumber(
+            const eip = generateEIPNumber(
                 octokit,
                 repository,
                 frontmatter,

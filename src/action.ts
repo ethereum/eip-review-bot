@@ -235,10 +235,10 @@ async function run() {
 
         core.info("Parsing data...");
         const textDecoder = new TextDecoder();
-        // Pull and parse config file ('eip-editors.yml') from main branch of main repository using only isomorphic-git (no fs)
+        // Pull and parse config file ('.wg/reviewers.yml') from main branch of main repository using only isomorphic-git (no fs)
         let config = undefined as { [key: string]: string[] } | undefined;
         try {
-            const configFilePath = core.getInput("config") || "eip-editors.yml";
+            const configFilePath = core.getInput("config") || ".wg/reviewers.yml";
             const configFilePathSplit = configFilePath.split("/");
             let configOid: string | undefined = mainBranchCommit.tree;
             for (const path of configFilePathSplit) {

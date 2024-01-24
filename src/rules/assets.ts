@@ -1,6 +1,6 @@
+import { RE_ASSET, RE_PROPOSAL } from "../paths.js";
 import processFiles from "../process.js";
 import { Config, File, Octokit, Rule } from "../types.js";
-import { RE_ASSET, RE_PROPOSAL } from "../utils.js";
 
 export default async function (
     octokit: Octokit,

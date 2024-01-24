@@ -1,20 +1,33 @@
 import localConfig from "../localConfig";
 import { generatePRTitle } from "../namePr";
-import type { File } from "../types";
 import { PullRequest, User } from "@octokit/webhooks-types";
+
+const source_remote = {
+    owner: "ausername",
+    repo: "EIPS",
+    ref: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+};
+
+const target_remote = {
+    owner: "ethereum",
+    repo: "EIPS",
+    ref: "5c5bcf09cdddb3150774e83e295d99e38a4a4a3a",
+};
 
 describe("namePR", () => {
     it("Correctly Names Simulated PR-1: Modifies EIP-1", () => {
         const files = [
             {
-                filename: "EIPS/eip-1.md",
+                filename: "content/00001.md",
                 status: "modified",
                 contents:
                     "---\ntitle: EIP Rules And Guidelines\nstatus: Living\n---\n## Testing1",
                 previous_contents:
                     "---\ntitle: EIP Rules And Guidelines\nstatus: Living\n---\n## Testing2",
-            },
-        ] as File[];
+                source_remote,
+                target_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (EIP-1)",
@@ -39,8 +52,10 @@ describe("namePR", () => {
                 status: "modified",
                 contents: "ci: old",
                 previous_contents: "ci: new",
-            },
-        ] as File[];
+                target_remote,
+                source_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (.github/workflows)",
@@ -58,12 +73,14 @@ describe("namePR", () => {
     it("Correctly Names Simulated PR-3: Modifies config", () => {
         const files = [
             {
-                filename: "config/testing.yml",
+                filename: ".wg/testing.yml",
                 status: "modified",
                 contents: "config: old",
                 previous_contents: "config: new",
-            },
-        ] as File[];
+                source_remote,
+                target_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (config)",
@@ -85,8 +102,10 @@ describe("namePR", () => {
                 status: "modified",
                 contents: "github: old",
                 previous_contents: "github: new",
-            },
-        ] as File[];
+                target_remote,
+                source_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (.github)",
@@ -104,12 +123,14 @@ describe("namePR", () => {
     it("Correctly Names Simulated PR-5: Modifies EIP Template", () => {
         const files = [
             {
-                filename: "eip-template.md",
+                filename: "docs/template.md",
                 status: "modified",
                 contents: "---\ntitle: EIP Template\n---\n## Testing1",
                 previous_contents: "---\ntitle: EIP Template\n---\n## Testing2",
-            },
-        ] as File[];
+                target_remote,
+                source_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (EIP Template)",
@@ -134,8 +155,10 @@ describe("namePR", () => {
                 status: "modified",
                 contents: "## Testing1",
                 previous_contents: "## Testing2",
-            },
-        ] as File[];
+                target_remote,
+                source_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (EIP README)",
@@ -156,11 +179,13 @@ describe("namePR", () => {
     it("Correctly Names Simulated PR-7: Adds New EIP", () => {
         const files = [
             {
-                filename: "EIPS/eip-9999.md",
+                filename: "content/09999.md",
                 status: "added",
                 contents: "---\ntitle: Testing New EIP\n---\n## Testing1",
-            },
-        ] as File[];
+                target_remote,
+                source_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (EIP README)",
@@ -178,14 +203,16 @@ describe("namePR", () => {
     it("Correctly Names Simulated PR-8: Updates EIP Status", () => {
         const files = [
             {
-                filename: "EIPS/eip-9999.md",
+                filename: "content/09999.md",
                 status: "modified",
                 contents:
                     "---\ntitle: Testing New EIP\nstatus: Final\n---\n## Testing1",
                 previous_contents:
                     "---\ntitle: Testing New EIP\nstatus: Living\n---\n## Testing2",
-            },
-        ] as File[];
+                source_remote,
+                target_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (Status Change EIP-9999)",
@@ -206,13 +233,15 @@ describe("namePR", () => {
     it("Correctly Names Simulated PR-9: Updates Existing EIP", () => {
         const files = [
             {
-                filename: "EIPS/eip-9999.md",
+                filename: "content/09999.md",
                 status: "modified",
                 contents: "---\ntitle: Testing New EIP\n---\n## Testing1",
                 previous_contents:
                     "---\ntitle: Testing New EIP\n---\n## Testing2",
-            },
-        ] as File[];
+                source_remote,
+                target_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (Update EIP-9999)",
@@ -233,12 +262,14 @@ describe("namePR", () => {
     it("Correctly Names Simulated PR-12: Modifies Website", () => {
         const files = [
             {
-                filename: "index.html",
+                filename: "static/assets/css/foo.css",
                 status: "modified",
                 contents: "## Testing1",
                 previous_contents: "## Testing2",
-            },
-        ] as File[];
+                source_remote,
+                target_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (Update Website)",
@@ -253,45 +284,22 @@ describe("namePR", () => {
         );
     });
 
-    it("Correctly Names Simulated PR-13: Modifies ERC-1", () => {
+    it("Correctly Names Simulated PR-13: Modifies index.md", () => {
         const files = [
             {
-                filename: "ERCS/erc-1.md",
+                filename: "content/00001/index.md",
                 status: "modified",
                 contents:
                     "---\ntitle: ERC Rules And Guidelines\nstatus: Living\n---\n## Testing1",
                 previous_contents:
                     "---\ntitle: ERC Rules And Guidelines\nstatus: Living\n---\n## Testing2",
-            },
-        ] as File[];
+                source_remote,
+                target_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
-                title: "PR Title Testing 123 (ERC-1)",
-                user: {
-                    login: "testUser",
-                } as User,
-            } as PullRequest,
-            files,
-        );
-        expect(prTitle).toEqual(
-            `${localConfig.title.updateEipPrefix
-                .replace("EIP", "ERC")
-                .replace("XXXX", "1")}PR Title Testing 123 (ERC-1)`,
-        );
-    });
-
-    it("Correctly Names Simulated PR-14: Modifies ERC Template", () => {
-        const files = [
-            {
-                filename: "erc-template.md",
-                status: "modified",
-                contents: "---\ntitle: ERC Template\n---\n## Testing1",
-                previous_contents: "---\ntitle: ERC Template\n---\n## Testing2",
-            },
-        ] as File[];
-        const prTitle = generatePRTitle(
-            {
-                title: "PR Title Testing 123 (ERC Template)",
+                title: "PR Title Testing 123 (index.md)",
                 user: {
                     login: "testUser",
                 } as User,
@@ -300,20 +308,22 @@ describe("namePR", () => {
         );
         expect(prTitle).toEqual(
             `${localConfig.title.updateEipPrefix.replace(
-                "EIP-XXXX",
-                "Template",
-            )}PR Title Testing 123 (ERC Template)`,
+                "XXXX",
+                "1",
+            )}PR Title Testing 123 (index.md)`,
         );
     });
 
-    it("Correctly Names Simulated PR-15: Adds New ERC", () => {
+    it("Correctly Names Simulated PR-15: Adds New index.md", () => {
         const files = [
             {
-                filename: "ERCS/erc-9999.md",
+                filename: "content/09999/index.md",
                 status: "added",
                 contents: "---\ntitle: Testing New ERC\n---\n## Testing1",
-            },
-        ] as File[];
+                source_remote,
+                target_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (ERC README)",
@@ -324,24 +334,23 @@ describe("namePR", () => {
             files,
         );
         expect(prTitle).toEqual(
-            `${localConfig.title.addEipPrefix.replace(
-                "EIP",
-                "ERC",
-            )}Testing New ERC`,
+            `${localConfig.title.addEipPrefix}Testing New ERC`,
         );
     });
 
-    it("Correctly Names Simulated PR-16: Updates ERC Status", () => {
+    it("Correctly Names Simulated PR-16: Updates index.md Status", () => {
         const files = [
             {
-                filename: "ERCS/erc-9999.md",
+                filename: "content/09999/index.md",
                 status: "modified",
                 contents:
                     "---\ntitle: Testing New ERC\nstatus: Final\n---\n## Testing1",
                 previous_contents:
                     "---\ntitle: Testing New ERC\nstatus: Living\n---\n## Testing2",
-            },
-        ] as File[];
+                source_remote,
+                target_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (Status Change ERC-9999)",
@@ -352,22 +361,25 @@ describe("namePR", () => {
             files,
         );
         expect(prTitle).toEqual(
-            `${localConfig.title.updateEipPrefix
-                .replace("EIP", "ERC")
-                .replace("XXXX", "9999")}Move to Final`,
+            `${localConfig.title.updateEipPrefix.replace(
+                "XXXX",
+                "9999",
+            )}Move to Final`,
         );
     });
 
-    it("Correctly Names Simulated PR-17: Updates Existing ERC", () => {
+    it("Correctly Names Simulated PR-17: Updates Existing index.md", () => {
         const files = [
             {
-                filename: "ERCS/erc-9999.md",
+                filename: "content/09999/index.md",
                 status: "modified",
                 contents: "---\ntitle: Testing New ERC\n---\n## Testing1",
                 previous_contents:
                     "---\ntitle: Testing New ERC\n---\n## Testing2",
-            },
-        ] as File[];
+                source_remote,
+                target_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
                 title: "PR Title Testing 123 (Update ERC-9999)",
@@ -378,29 +390,29 @@ describe("namePR", () => {
             files,
         );
         expect(prTitle).toEqual(
-            `${localConfig.title.updateEipPrefix
-                .replace("EIP", "ERC")
-                .replace(
-                    "XXXX",
-                    "9999",
-                )}PR Title Testing 123 (Update ERC-9999)`,
+            `${localConfig.title.updateEipPrefix.replace(
+                "XXXX",
+                "9999",
+            )}PR Title Testing 123 (Update ERC-9999)`,
         );
     });
 
-    it("Correctly Names Simulated PR-18: Modifies ERC-1", () => {
+    it("Correctly Names Simulated PR-18: Modifies index.md", () => {
         const files = [
             {
-                filename: "ERCS/erc-1.md",
+                filename: "content/00001/index.md",
                 status: "modified",
                 contents:
                     "---\ntitle: EIP Rules And Guidelines\nstatus: Living\n---\n## Testing1",
                 previous_contents:
                     "---\ntitle: EIP Rules And Guidelines\nstatus: Living\n---\n## Testing2",
-            },
-        ] as File[];
+                source_remote,
+                target_remote,
+            } as const,
+        ];
         const prTitle = generatePRTitle(
             {
-                title: "PR Title Testing 123 (ERC-1)",
+                title: "PR Title Testing 123 (index.md)",
                 user: {
                     login: "testUser",
                 } as User,
@@ -408,9 +420,10 @@ describe("namePR", () => {
             files,
         );
         expect(prTitle).toEqual(
-            `${localConfig.title.updateEipPrefix
-                .replace("EIP", "ERC")
-                .replace("XXXX", "1")}PR Title Testing 123 (ERC-1)`,
+            `${localConfig.title.updateEipPrefix.replace(
+                "XXXX",
+                "1",
+            )}PR Title Testing 123 (index.md)`,
         );
     });
 });

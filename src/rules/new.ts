@@ -1,5 +1,5 @@
+import { isProposal } from "../paths.js";
 import { Config, File, Octokit, Rule } from "../types.js";
-import { isProposal } from "../utils.js";
 
 export default async function (
     _octokit: Octokit,

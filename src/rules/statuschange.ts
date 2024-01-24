@@ -1,5 +1,5 @@
+import { isProposal } from "../paths.js";
 import { Config, File, FrontMatter, Octokit, Rule } from "../types.js";
-import { isProposal } from "../utils.js";
 import fm from "front-matter";
 
 const statusOrder = [

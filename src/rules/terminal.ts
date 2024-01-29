@@ -28,8 +28,8 @@ export default async function (
                         /(?<=(?:^|,)[^<(]+\(@)(.*?)(?=\)(?:$|,))/g,
                     ) || [];
                 let pr_approval = false;
-                let min = Math.floor(config.governance.length / 2);
-                for (const editor of config.governance) {
+                let min = Math.floor(config.editors.length / 2);
+                for (const editor of config.editors) {
                     if (authors.includes(editor)) {
                         pr_approval = true;
                         min = 1;
@@ -39,7 +39,7 @@ export default async function (
                 return [
                     {
                         name: "terminal",
-                        reviewers: config.governance,
+                        reviewers: config.editors,
                         min,
                         pr_approval,
                         annotation: {

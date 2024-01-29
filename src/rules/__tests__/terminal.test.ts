@@ -16,11 +16,11 @@ const target_remote = {
 };
 
 describe("checkTerminalStatus", () => {
-    test("Should require half of governance editors on EIP terminal file", async () => {
+    test("Should require half of editors editors on EIP terminal file", async () => {
         await expect(
             checkTerminalStatus(
                 fakeOctokit,
-                { governance: ["a", "b", "c", "d"] },
+                { editors: ["a", "b", "c", "d"] },
                 [
                     {
                         filename: "content/00001.md",
@@ -45,7 +45,7 @@ describe("checkTerminalStatus", () => {
 
     test("Should not require any reviewers on non-terminal EIP file", async () => {
         await expect(
-            checkTerminalStatus(fakeOctokit, { governance: ["a", "b", "c"] }, [
+            checkTerminalStatus(fakeOctokit, { editors: ["a", "b", "c"] }, [
                 {
                     filename: "content/00001.md",
                     status: "modified",
@@ -57,11 +57,11 @@ describe("checkTerminalStatus", () => {
         ).resolves.toMatchObject([]);
     });
 
-    test("Should require half of governance editors on terminal index.md", async () => {
+    test("Should require half of editors editors on terminal index.md", async () => {
         await expect(
             checkTerminalStatus(
                 fakeOctokit,
-                { governance: ["a", "b", "c", "d"] },
+                { editors: ["a", "b", "c", "d"] },
                 [
                     {
                         filename: "content/00001/index.md",
@@ -86,7 +86,7 @@ describe("checkTerminalStatus", () => {
 
     test("Should not require any reviewers on non-terminal index.md", async () => {
         await expect(
-            checkTerminalStatus(fakeOctokit, { governance: ["a", "b", "c"] }, [
+            checkTerminalStatus(fakeOctokit, { editors: ["a", "b", "c"] }, [
                 {
                     filename: "content/00001/index.md",
                     status: "modified",
@@ -100,7 +100,7 @@ describe("checkTerminalStatus", () => {
 
     test("Should not require any reviewers on non-EIP file", async () => {
         await expect(
-            checkTerminalStatus(fakeOctokit, { governance: ["a", "b", "c"] }, [
+            checkTerminalStatus(fakeOctokit, { editors: ["a", "b", "c"] }, [
                 {
                     filename: "foo.txt",
                     status: "modified",

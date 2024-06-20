@@ -32,9 +32,9 @@
         "prettier": "3.2.5"
     },
     "dependencies": {
-        "@octokit/fixtures": "^22.0.6",
-        "@octokit/plugin-throttling": "^8.1.3",
-        "@octokit/rest": "^20.0.0",
+        "@octokit/fixtures": "^23.0.0",
+        "@octokit/plugin-throttling": "^9.0.0",
+        "@octokit/rest": "^21.0.0",
         "@octokit/webhooks-types": "^7.0.0",
         "@types/jest": "^29.5.0",
         "@types/node": "^20.0.0",

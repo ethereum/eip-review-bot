@@ -1,10 +1,13 @@
 import { generatePRTitle } from "./namePr";
 import { Config, File, FrontMatter, Octokit } from "./types";
+import { Octokit as OctokitRest } from "@octokit/rest";
 import type { Repository } from "@octokit/webhooks-types";
 import { PullRequest } from "@octokit/webhooks-types";
 import crypto from "crypto";
 import fm from "front-matter";
 import yaml from "js-yaml";
+
+// Updated import
 
 function getGitBlobSha(content: string) {
     return crypto
@@ -13,37 +16,30 @@ function getGitBlobSha(content: string) {
         .digest("hex");
 }
 
-async function generateEIPNumber(
+export async function generateEIPNumber(
     octokit: Octokit,
     _repository: Repository,
     frontmatter: FrontMatter,
     file: File,
     isMerging: boolean = false,
 ): Promise<string> {
-    // Generate mnemonic name for draft EIPs or EIPs not yet about to be merged
-    //if (frontmatter.status == 'Draft' || (frontmatter.status == 'Review' && !isMerging)) { // What I want to do
     if (!isMerging && frontmatter.status == "Draft" && file.status == "added") {
-        // What I have to do
         let eip = frontmatter.title
             .split(/[^\w\d]+/)
             ?.join("_")
             .toLowerCase();
-        // If there are trailing underscores, remove them
         while (eip.endsWith("_")) {
             eip = eip.slice(0, -1);
         }
-        // If there are leading underscores, remove them
         while (eip.startsWith("_")) {
             eip = eip.slice(1);
         }
-        // If the name is too long, truncate it
         if (eip.length > 30) {
             eip = eip.slice(0, 30);
         }
         return `draft_${eip}`;
     }
 
-    // If filename already has an EIP number, use that
     if (
         file.filename.startsWith("EIPS/eip-") ||
         file.filename.startsWith("ERCS/erc-")
@@ -54,8 +50,6 @@ async function generateEIPNumber(
         }
     }
 
-    // Get all EIPs
-    // TODO: This should not be hardcoded
     const eipPathConfigs = [
         {
             owner: "ethereum",
@@ -71,10 +65,9 @@ async function generateEIPNumber(
     let eips: { name: string }[] = [];
     for (const eipPathConfig of eipPathConfigs) {
         const { data } = await octokit.rest.repos.getContent(eipPathConfig);
-        eips = eips.concat(data);
+        eips = eips.concat(data as { name: string }[]);
     }
 
-    // Get all EIP numbers
     const eipNumbers = eips
         .filter(
             (eip) => eip.name.startsWith("eip-") || eip.name.startsWith("erc-"),
@@ -87,7 +80,6 @@ async function generateEIPNumber(
             }
         });
 
-    // Find the biggest EIP number
     const eipNumber = Math.max(...eipNumbers);
 
     return (eipNumber + 1).toString();
@@ -101,11 +93,10 @@ async function updateFiles(
 ) {
     const owner = pull_request.head.repo?.owner?.login as string;
     const repo = pull_request.head.repo?.name as string;
-    const parentOwner = pull_request.base.repo?.owner?.login;
-    const parentRepo = pull_request.base.repo?.name;
+    const parentOwner = pull_request.base.repo?.owner?.login ?? ""; // Handle potential null value
+    const parentRepo = pull_request.base.repo?.name ?? ""; // Handle potential null value
     const ref = `heads/${pull_request.head.ref}`;
 
-    // Update all changed files
     for (const file of newFiles) {
         const changed = !!oldFiles.find(
             (f) => f.filename == file.filename && f.contents != file.contents,
@@ -127,7 +118,7 @@ async function updateFiles(
             branch: ref,
         });
     }
-    // Add all new files
+
     for (const file of newFiles) {
         const added = !oldFiles.find((f) => f.filename == file.filename);
         if (!added) {
@@ -144,14 +135,13 @@ async function updateFiles(
             branch: ref,
         });
     }
-    // Delete all deleted files
+
     for (const file of oldFiles) {
         const removed = !newFiles.find((f) => f.filename == file.filename);
         if (!removed) {
             continue;
         }
 
-        // Generate old file sha using blob API
         const oldContent = file.contents as string;
         await octokit.rest.repos.deleteFile({
             owner: owner,
@@ -163,14 +153,12 @@ async function updateFiles(
         });
     }
 
-    // For good measure, update the PR body (this also helps the bot to fail if there are any merge conflicts that somehow arose from the above)
     await octokit.rest.pulls.updateBranch({
         owner: parentOwner,
         repo: parentRepo,
         pull_number: pull_request.number,
     });
 
-    // Return
     return pull_request;
 }
 
@@ -182,8 +170,6 @@ export async function preMergeChanges(
     files: File[],
     isMerging: boolean = false,
 ) {
-    // Modify EIP data when needed
-
     let anyFilesChanged = false;
 
     const newFiles: File[] = [];
@@ -191,15 +177,13 @@ export async function preMergeChanges(
     for (let file of files) {
         file = { ...file };
         if (file.status == "removed") {
-            continue; // Don't need to do stuff with removed files
+            continue;
         }
         if (file.filename.endsWith(".md")) {
-            // Parse file
             const fileContent = file.contents as string;
             const fileData = fm(fileContent);
             const frontmatter = fileData.attributes as FrontMatter;
 
-            // Check if EIP number needs setting
             const eip = await generateEIPNumber(
                 octokit,
                 repository,
@@ -221,7 +205,6 @@ export async function preMergeChanges(
                 anyFilesChanged = true;
                 oldEipToNewEip[oldFilename.split("-")?.[1]] = file.filename;
 
-                // Retroactively update asset files
                 for (let i = 0; i < newFiles.length; i++) {
                     if (
                         newFiles[i].filename.startsWith(
@@ -236,14 +219,12 @@ export async function preMergeChanges(
                 }
             }
 
-            // Check if status needs setting
             if (!frontmatter.status) {
                 frontmatter.status = "Draft";
 
                 anyFilesChanged = true;
             }
 
-            // Check if last call deadline needs setting
             if (
                 frontmatter.status == "Last Call" &&
                 !frontmatter["last-call-deadline"]
@@ -256,9 +237,71 @@ export async function preMergeChanges(
                 anyFilesChanged = true;
             }
 
-            // Now, regenerate markdown from front matter
+            let shouldCheckDeadLine = false;
+
+            if (frontmatter.status == "Last Call") {
+                shouldCheckDeadLine = false;
+
+                if (!frontmatter["last-call-deadline"]) {
+                    const fourteenDays = new Date(Date.now() + 12096e5);
+                    frontmatter["last-call-deadline"] = new Date(
+                        `${fourteenDays.getUTCFullYear()}-${fourteenDays.getUTCMonth()}-${fourteenDays.getUTCDate()}`,
+                    );
+
+                    anyFilesChanged = true;
+                } else {
+                    shouldCheckDeadLine = true;
+                }
+
+                if (shouldCheckDeadLine) {
+                    const octokitRest = new OctokitRest({
+                        auth: process.env.GITHUB_ACCESS_TOKEN,
+                    });
+
+                    async function getLastCommitDate(filePath: string) {
+                        const { data: commits } =
+                            await octokitRest.repos.listCommits({
+                                owner: "ethereum",
+                                repo: "eip-review-bot",
+                                path: filePath,
+                                per_page: 1,
+                            });
+
+                        if (
+                            commits.length > 0 &&
+                            commits[0]?.commit?.committer?.date
+                        ) {
+                            return commits[0].commit.committer.date;
+                        }
+
+                        return null;
+                    }
+
+                    const lastCommitDate = await getLastCommitDate(
+                        file.filename,
+                    );
+                    if (lastCommitDate) {
+                        const lastCommitDateObj = new Date(lastCommitDate);
+                        const twoWeeksFromLastCommit = new Date(
+                            lastCommitDateObj.getTime() +
+                                14 * 24 * 60 * 60 * 1000,
+                        );
+
+                        if (
+                            frontmatter["last-call-deadline"] <
+                            twoWeeksFromLastCommit
+                        ) {
+                            throw new Error(
+                                "last-call-deadline is less than two weeks into the future from last commit date",
+                            );
+                        }
+                    }
+
+                    anyFilesChanged = true;
+                }
+            }
+
             let newYaml = yaml.dump(frontmatter, {
-                // Ensure preamble is in the right order
                 sortKeys: function (a: unknown, b: unknown) {
                     if (typeof a !== "string" || typeof b !== "string") {
                         throw new Error("non-string while sorting YAML");
@@ -281,20 +324,22 @@ export async function preMergeChanges(
                     return preambleOrder.indexOf(a) - preambleOrder.indexOf(b);
                 },
                 // Ensure that dates and integers are not turned into strings
-                replacer: function (key, value: unknown) {
-                    if (key == "eip" && Number.isInteger(value)) {
-                        if (typeof value === "string") {
-                            return parseInt(value); // Ensure that it's an integer
-                        }
+                replacer: function (key: string, value: any) {
+                    if (
+                        key === "eip" &&
+                        typeof value === "string" &&
+                        !isNaN(parseInt(value))
+                    ) {
+                        return parseInt(value, 10); // Ensure that it's an integer
                     }
                     if (
-                        key == "requires" &&
-                        typeof value == "string" &&
+                        key === "requires" &&
+                        typeof value === "string" &&
                         !value.includes(",")
                     ) {
-                        return parseInt(value); // Ensure that non-list requires aren't transformed into strings
+                        return parseInt(value, 10); // Ensure that non-list requires aren't transformed into strings
                     }
-                    if (key == "created" || key == "last-call-deadline") {
+                    if (key === "created" || key === "last-call-deadline") {
                         switch (typeof value) {
                             case "string":
                             case "number":
@@ -310,23 +355,19 @@ export async function preMergeChanges(
                     }
                     return value;
                 },
-                // Generic options
                 lineWidth: -1, // No max line width for preamble
                 noRefs: true, // Disable YAML references
             });
-            newYaml = newYaml.trim(); // Get rid of excess whitespace
-            newYaml = newYaml.replaceAll("T00:00:00.000Z", ""); // Mandated date formatting by EIP-1
+            newYaml = newYaml.trim();
+            newYaml = newYaml.replaceAll("T00:00:00.000Z", "");
 
-            // Regenerate file contents
             file.contents = `---\n${newYaml}\n---\n\n${fileData.body}`;
 
-            // Push
             newFiles.push(file);
         } else if (file.filename.startsWith("assets/eip-")) {
             const oldFilename = file.filename;
             const eip = oldFilename.split("-")?.[1];
             if (eip in oldEipToNewEip) {
-                // Rename file
                 file.filename = file.filename.replace(
                     `eip-${eip}`,
                     `eip-${oldEipToNewEip[eip].split("-")?.[1]}`,
@@ -337,16 +378,12 @@ export async function preMergeChanges(
                 }
             }
 
-            // Push
             newFiles.push(file);
         } else {
             newFiles.push(file);
         }
     }
 
-    // Push changes
-    // TODO: DISABLED FOR NOW
-    // eslint-disable-next-line no-constant-condition
     if (false && anyFilesChanged) {
         pull_request = await updateFiles(
             octokit,
@@ -356,7 +393,6 @@ export async function preMergeChanges(
         );
     }
 
-    // Update PR title
     const newPRTitle = generatePRTitle(pull_request, newFiles);
     if (newPRTitle && newPRTitle != pull_request?.title) {
         await octokit.rest.pulls.update({
@@ -368,7 +404,6 @@ export async function preMergeChanges(
         pull_request.title = newPRTitle;
     }
 
-    // Return
     return pull_request;
 }
 
@@ -379,7 +414,6 @@ export async function performMergeAction(
     pull_request: PullRequest,
     files: File[],
 ) {
-    // Make pre-merge changes
     pull_request = await preMergeChanges(
         octokit,
         _,
@@ -389,14 +423,9 @@ export async function performMergeAction(
         true,
     );
 
-    // If draft PR, return
     if (pull_request.draft) return;
 
-    // Enable auto merge
-    // Need to use GraphQL API to enable auto merge
-    // https://docs.github.com/en/graphql/reference/mutations#enablepullrequestautomerge
     const response: unknown = await octokit.graphql(
-        // There's a bug with Prettier that breaks the syntax highlighting for the rest of the file if I don't do indentation like this
         `query GetPullRequestId($owner: String!, $repo: String!, $pullRequestNumber: Int!) {
             repository(owner: $owner, name: $repo) {
                 pullRequest(number: $pullRequestNumber) {
@@ -458,7 +487,6 @@ export async function performMergeAction(
         },
     );
 
-    // Approve PR
     await octokit.rest.pulls.createReview({
         owner: repository.owner.login,
         repo: repository.name,

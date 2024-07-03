@@ -10,7 +10,11 @@
         "moduleResolution": "node",
         "esModuleInterop": true,
         "noUnusedLocals": true,
-        "noUnusedParameters": true
+        "noUnusedParameters": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "outDir": "./dist"
     },
+    "include": ["src/**/*", "src/__tests__/**/*"],
     "exclude": ["node_modules"]
 }

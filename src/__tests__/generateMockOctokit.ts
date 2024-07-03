@@ -142,6 +142,7 @@ export const mockEthereumOrg: User = {
         "https://api.github.com/users/ethereum/received_events",
     site_admin: false,
 };
+
 export const mockForkUser: User = {
     id: 2,
     login: "fork-user",
@@ -261,7 +262,9 @@ export const mockEIPsRepo: Repository = {
     open_issues: 0,
     watchers: 0,
     web_commit_signoff_required: false,
+    custom_properties: {}, // Add custom properties
 };
+
 export const mockEIPsForkRepo: Repository = {
     id: 1,
     owner: mockForkUser,
@@ -360,4 +363,5 @@ export const mockEIPsForkRepo: Repository = {
     open_issues: 0,
     watchers: 0,
     web_commit_signoff_required: false,
+    custom_properties: {}, // Add custom properties
 };

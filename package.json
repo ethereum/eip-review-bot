@@ -34,7 +34,7 @@
     "dependencies": {
         "@octokit/fixtures": "^23.0.0",
         "@octokit/plugin-throttling": "^9.0.0",
-        "@octokit/rest": "^20.0.0",
+        "@octokit/rest": "^21.0.0",
         "@octokit/webhooks-types": "^7.0.0",
         "@types/jest": "^29.5.0",
         "@types/node": "^20.0.0",

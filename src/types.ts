@@ -68,3 +68,5 @@ export declare type FrontMatter = {
     "last-call-deadline": Date;
     created: Date;
 } & { [key: string]: string };
+
+// Note: Repository type is not defined here as it comes from @octokit/webhooks-types

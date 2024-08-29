@@ -37,7 +37,7 @@
         "@octokit/rest": "^20.0.0",
         "@octokit/webhooks-types": "^7.0.0",
         "@types/jest": "^29.5.0",
-        "@types/node": "^20.0.0",
+        "@types/node": "^22.0.0",
         "before-after-hook": "^3.0.2",
         "bottleneck": "^2.19.5",
         "encoding": "^0.1.13",

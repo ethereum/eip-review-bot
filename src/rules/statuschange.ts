@@ -49,14 +49,7 @@ export default async function (
                 return [
                     {
                         name: "statuschange",
-                        reviewers:
-                            config[
-                                (
-                                    frontMatterNew.attributes?.category ||
-                                    frontMatterNew.attributes?.type ||
-                                    "governance"
-                                ).toLowerCase()
-                            ],
+                        reviewers: config.editors,
                         min: 1,
                         annotation: {
                             file: file.filename,
@@ -79,14 +72,7 @@ export default async function (
                 return [
                     {
                         name: "statuschange",
-                        reviewers:
-                            config[
-                                (
-                                    frontMatterNew.attributes?.category ||
-                                    frontMatterNew.attributes?.type ||
-                                    "governance"
-                                ).toLowerCase()
-                            ],
+                        reviewers: config.editors,
                         min: 1,
                         annotation: {
                             file: file.filename,

@@ -26,14 +26,7 @@ export default async function (
                 return [
                     {
                         name: "stagnant",
-                        reviewers:
-                            config[
-                                (
-                                    frontMatter.attributes?.category ||
-                                    frontMatter.attributes?.type ||
-                                    "governance"
-                                ).toLowerCase()
-                            ],
+                        reviewers: config.editors,
                         min: 1,
                         pr_approval: true,
                         annotation: {

@@ -2,10 +2,7 @@ import { File } from "./types";
 
 export const RE_PROPOSAL = /^content\/([0-9]+)(?:\/index)?.md$/;
 export const RE_ASSET = /^content\/([0-9]+)\/assets\/.*$/;
-export const RE_STATIC = /^static\/.*$/;
-export const RE_TEMPLATE = /^templates\/.*$/;
-export const RE_THEME = /^themes\/.*$/;
-export const RE_CONFIG = /^\.wg\/.*$/;
+export const RE_CONFIG = /^reviewers\.yml$/;
 
 function testFile(re: RegExp, arg: string | File): boolean {
     if (typeof arg !== "string") {
@@ -21,18 +18,6 @@ export function isProposal(arg: string | File): boolean {
 
 export function isAsset(arg: string | File): boolean {
     return testFile(RE_ASSET, arg);
-}
-
-export function isStatic(arg: string | File): boolean {
-    return testFile(RE_STATIC, arg);
-}
-
-export function isTemplate(arg: string | File): boolean {
-    return testFile(RE_TEMPLATE, arg);
-}
-
-export function isTheme(arg: string | File): boolean {
-    return testFile(RE_THEME, arg);
 }
 
 export function isConfig(arg: string | File): boolean {

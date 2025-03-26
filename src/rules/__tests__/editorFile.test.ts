@@ -20,7 +20,7 @@ describe("checkOtherFiles", () => {
         await expect(
             checkEditorFile(fakeOctokit, { editors: ["a", "b", "c"] }, [
                 {
-                    filename: ".wg/reviewers.yml",
+                    filename: "reviewers.yml",
                     status: "modified",
                     source_remote,
                     target_remote,
@@ -32,7 +32,7 @@ describe("checkOtherFiles", () => {
                 reviewers: ["a", "b", "c"],
                 min: 1,
                 annotation: {
-                    file: ".wg/reviewers.yml",
+                    file: "reviewers.yml",
                 },
             },
         ]);

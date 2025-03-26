@@ -73,7 +73,7 @@ describe("namePR", () => {
     it("Correctly Names Simulated PR-3: Modifies config", () => {
         const files = [
             {
-                filename: ".wg/testing.yml",
+                filename: "reviewers.yml",
                 status: "modified",
                 contents: "config: old",
                 previous_contents: "config: new",
@@ -256,31 +256,6 @@ describe("namePR", () => {
                 "XXXX",
                 "9999",
             )}PR Title Testing 123 (Update EIP-9999)`,
-        );
-    });
-
-    it("Correctly Names Simulated PR-12: Modifies Website", () => {
-        const files = [
-            {
-                filename: "static/assets/css/foo.css",
-                status: "modified",
-                contents: "## Testing1",
-                previous_contents: "## Testing2",
-                source_remote,
-                target_remote,
-            } as const,
-        ];
-        const prTitle = generatePRTitle(
-            {
-                title: "PR Title Testing 123 (Update Website)",
-                user: {
-                    login: "testUser",
-                } as User,
-            } as PullRequest,
-            files,
-        );
-        expect(prTitle).toEqual(
-            `${localConfig.title.websitePrefix}PR Title Testing 123 (Update Website)`,
         );
     });
 

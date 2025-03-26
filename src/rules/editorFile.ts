@@ -8,7 +8,7 @@ export default async function (
     // Get results
     const res: Rule[][] = await Promise.all(
         files.map((file) => {
-            if (file.filename != ".wg/reviewers.yml") return [];
+            if (file.filename != "reviewers.yml") return [];
             return [
                 {
                     name: "editors",

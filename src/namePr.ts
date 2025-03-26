@@ -1,12 +1,5 @@
 import localConfig from "./localConfig";
-import {
-    eipNumber,
-    isConfig,
-    isProposal,
-    isStatic,
-    isTemplate,
-    isTheme,
-} from "./paths";
+import { eipNumber, isConfig, isProposal } from "./paths";
 import type { File, FrontMatter } from "./types";
 import type { PullRequest } from "@octokit/webhooks-types";
 import fm from "front-matter";
@@ -23,14 +16,6 @@ export function generatePRTitle(pull_request: PullRequest, files: File[]) {
 
     if (title.match(":")) {
         title = title.split(":").slice(1).join(":").trim();
-    }
-
-    // If the PR modifies the website, use Website prefix unless the beginning portion is for EIP-1
-    const isWeb = files.some(
-        (file) => isStatic(file) || isTemplate(file) || isTheme(file),
-    );
-    if (isWeb) {
-        return localConfig.title.websitePrefix + title;
     }
 
     // If the PR changes a file in the .github/workflows directory, use CI prefix

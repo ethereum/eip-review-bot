@@ -20,7 +20,7 @@ jobs:
 
       - name: Cache node_modules
         id: cache-npm-packages
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         env:
           cache-name: cache-node_modules
         with:

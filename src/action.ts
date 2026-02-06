@@ -19,6 +19,7 @@ import path from "path";
 import { parse } from "yaml";
 
 const unknown = "<unknown>";
+const ignore_me = "[ignore-me]";
 
 // Initialize GitHub API
 const GITHUB_TOKEN = core.getInput("token");
@@ -85,6 +86,11 @@ async function run() {
     // If PR is already merged, exit
     if (pull_request.merged) {
         core.info("Pull Request is already merged. Exiting.");
+        process.exit(0);
+    }
+
+    if (pull_request.title.indexOf(ignore_me) >= 0) {
+        core.info(`Pull Request title includes ${ignore_me}. Exiting.`);
         process.exit(0);
     }
 

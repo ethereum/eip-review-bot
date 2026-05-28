@@ -554,6 +554,7 @@ async function run() {
                     const file = rule.annotation.file;
                     filesToRules[file] = filesToRules[file] || [];
                     filesToRules[file].push({
+                        name: rule.name,
                         min: rule.min,
                         requesting: rule.reviewers,
                         mention_reviewers: rule.mention_reviewers ?? false,

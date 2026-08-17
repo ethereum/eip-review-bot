@@ -6,7 +6,7 @@
     "type": "module",
     "scripts": {
         "fmt": "prettier --write .",
-        "build": "esbuild src/action.ts --bundle --platform=node --target=node16 --outfile=dist/index.js && echo { \\\"type\\\": \\\"commonjs\\\" } > dist/package.json",
+        "build": "esbuild src/action.ts --bundle --platform=node --target=node24 --outfile=dist/index.js && echo { \\\"type\\\": \\\"commonjs\\\" } > dist/package.json",
         "test": "tsc --noEmit && prettier --check . && eslint . && jest"
     },
     "repository": {

@@ -676,4 +676,7 @@ async function run() {
     }
 }
 
-run().catch(() => process.exit(2));
+run().catch((e) => {
+    core.setFailed(e instanceof Error ? e : String(e));
+    process.exit(2);
+});
